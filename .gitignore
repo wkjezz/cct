@@ -17,3 +17,5 @@ pnpm-lock.yaml
 /.idea
 /.vscode
 *.log
+# Vite build
+cell-call-tracker/client/dist
