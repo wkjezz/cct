@@ -40,7 +40,7 @@ body::before{
   background-size: min(70vmin, 1100px);
   pointer-events: none;
   z-index: 0;
-  opacity: 0.08;            /* translucency */
+  opacity: 0.02;            /* translucency */
   filter: grayscale(100%);  /* monochrome */
 }
 
