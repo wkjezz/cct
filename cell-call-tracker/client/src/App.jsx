@@ -2,19 +2,30 @@ import React, { useEffect, useMemo, useState } from 'react'
 
 const API = import.meta.env.VITE_API_BASE || '/api';
 
-
 /* ========== Utilities ========== */
 function Label({children}){ return <div className="label">{children}</div> }
 function Row({children}){ return <div className="row">{children}</div> }
 function Divider(){ return <div className="section-sep" /> }
+
 function toLocalMidnightISO(ymd){
   const [y,m,d]=ymd.split('-').map(Number);
-  return new Date(y,m-1,d,0,0,0,0).toISOString()
+  return new Date(y,m-1,d,0,0,0,0).toISOString();
 }
 function todayYMD(){ return new Date().toISOString().slice(0,10) }
 function daysAgoYMD(n){ const t=new Date(); t.setDate(t.getDate()-n); return t.toISOString().slice(0,10) }
 function fmtDateUS(iso){ try{ const d=new Date(iso); return d.toLocaleDateString('en-US') }catch{ return iso } }
 function fmtDateTimeEST(iso){ try{ return new Date(iso).toLocaleString('en-US',{ timeZone:'America/New_York' }) }catch{ return iso } }
+
+/** Safe fetch that returns JSON or null on error (never throws). */
+async function getJSON(url, options) {
+  try {
+    const r = await fetch(url, options);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch {
+    return null;
+  }
+}
 
 /* ========== Chips (selected people) ========== */
 function ChipList({items, render, onRemove}){
@@ -27,13 +38,13 @@ function ChipList({items, render, onRemove}){
         </span>
       ))}
     </div>
-  )
+  );
 }
 
 /* ========== AddSelect (dropdown + Add) ========== */
 function AddSelect({label, options, selectedIds, onAdd, onRemove}){
-  const [pick, setPick] = useState('')
-  const left = options.filter(o => !selectedIds.includes(String(o.id)))
+  const [pick, setPick] = useState('');
+  const left = options.filter(o => !selectedIds.includes(String(o.id)));
   return (
     <label className="field">
       <Label>{label}</Label>
@@ -45,11 +56,7 @@ function AddSelect({label, options, selectedIds, onAdd, onRemove}){
         <button
           type="button"
           className="btn"
-          onClick={()=>{
-            if(!pick) return
-            onAdd(pick)
-            setPick('')
-          }}
+          onClick={()=>{ if(pick){ onAdd(pick); setPick(''); } }}
         >Add</button>
       </div>
       <ChipList
@@ -58,27 +65,32 @@ function AddSelect({label, options, selectedIds, onAdd, onRemove}){
         onRemove={(id)=> onRemove(id)}
       />
     </label>
-  )
+  );
 }
 
 /* ========== FORM: Report Cell Call ========== */
 function Form({ onSaved }){
-  const [staff, setStaff] = useState([])
-  const [saving, setSaving] = useState(false)
-  const [msg, setMsg] = useState('')
-  const [formKey, setFormKey] = useState(0)
+  const [staff, setStaff] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [formKey, setFormKey] = useState(0);
 
-  useEffect(()=>{ fetch(`${API}/staff`).then(r=>r.json()).then(setStaff) },[])
-  const staffOpts = useMemo(()=> staff.map(s => ({ id:String(s.id), name: s.name, role: s.role })), [staff])
+  useEffect(()=>{
+    (async () => {
+      const rows = await getJSON(`${API}/staff`);
+      setStaff(Array.isArray(rows) ? rows : []);
+    })();
+  },[]);
+  const staffOpts = useMemo(()=> staff.map(s => ({ id:String(s.id), name: s.name, role: s.role })), [staff]);
 
   // Supervising list: exclude Paralegal/Junior + add Judiciary
   const supervisingOpts = useMemo(() => {
     const allowed = staff
       .filter(s => !/paralegal/i.test(s.role) && !/junior/i.test(s.role))
-      .map(s => ({ id:String(s.id), name:s.name, role:s.role }))
-    allowed.push({ id:'judiciary', name:'Judiciary', role:'Court Oversight' })
-    return allowed
-  }, [staff])
+      .map(s => ({ id:String(s.id), name:s.name, role:s.role }));
+    allowed.push({ id:'judiciary', name:'Judiciary', role:'Court Oversight' });
+    return allowed;
+  }, [staff]);
 
   const init = () => ({
     date: todayYMD(),
@@ -98,39 +110,34 @@ function Form({ onSaved }){
     incidentType: 'HUT',
     notes: '',
     by: 'dev-ui'
-  })
-  const [form,setForm] = useState(init())
-  const upd=(k,v)=>setForm(f=>({...f,[k]:v}))
-  const six=s=>String(s).slice(0,6)
-  const hardClear=()=>{setForm(init());setMsg('');setFormKey(k=>k+1)}
+  });
+  const [form,setForm] = useState(init());
+  const upd=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const six=s=>String(s).slice(0,6);
+  const hardClear=()=>{setForm(init());setMsg('');setFormKey(k=>k+1)};
 
   function validate(){
-    if(!form.incidentId) return 'Incident ID required'
-    if(form.incidentId.length!==6) return 'Incident ID must be 6 chars'
-    if(!form.dojReportNumber) return 'DOJ Report required'
-    if(form.dojReportNumber.length!==6) return 'DOJ Report must be 6 chars'
-    if(!form.leadingId) return 'Select lead attorney'
-    if(form.verdict==='BENCH_REQUEST'&&!form.benchVerdictNumber) return 'Verdict # required'
-    return ''
+    if(!form.incidentId) return 'Incident ID required';
+    if(form.incidentId.length!==6) return 'Incident ID must be 6 chars';
+    if(!form.dojReportNumber) return 'DOJ Report required';
+    if(form.dojReportNumber.length!==6) return 'DOJ Report must be 6 chars';
+    if(!form.leadingId) return 'Select lead attorney';
+    if(form.verdict==='BENCH_REQUEST'&&!form.benchVerdictNumber) return 'Verdict # required';
+    return '';
   }
 
-  // Exact-match duplicate check, client-side
+  /** Exact-match duplicate check (client-side) by DOJ # */
   async function findByDOJ(doj) {
-    const norm = v => String(v ?? '').trim();
-    const wanted = norm(doj);
+    const trim = v => String(v ?? '').trim();
+    const wanted = trim(doj);
     if (!wanted) return null;
-
-    const res = await fetch(`${API}/records`);
-    if (!res.ok) return null;
-    const all = await res.json();
+    const all = await getJSON(`${API}/records`);
     if (!Array.isArray(all)) return null;
-
-    return all.find(r => norm(r.dojReportNumber) === wanted) || null;
+    return all.find(r => trim(r.dojReportNumber) === wanted) || null;
   }
 
   async function submit(e){
     e.preventDefault();
-
     const err = validate();
     if (err) { setMsg(err); return; }
 
@@ -139,7 +146,7 @@ function Form({ onSaved }){
 
     const payload = {
       date: toLocalMidnightISO(form.date),
-      createdAt: new Date().toISOString(), // ensure true save-time
+      createdAt: new Date().toISOString(),
       savedAt:   new Date().toISOString(),
       incidentId: form.incidentId,
       dojReportNumber: form.dojReportNumber,
@@ -160,47 +167,53 @@ function Form({ onSaved }){
     };
 
     try {
-      // Duplicate check by DOJ #
       const existing = await findByDOJ(form.dojReportNumber);
 
       if (existing) {
-        const ok = window.confirm(`Cell Call for Report ${form.dojReportNumber} has already been submitted, do you wish to overwrite it?`);
+        const ok = window.confirm(
+          `Cell Call for Report ${form.dojReportNumber} has already been submitted, do you wish to overwrite it?`
+        );
         if (!ok) { setSaving(false); setMsg('Canceled.'); return; }
 
-        // Prefer PUT; fall back to DELETE+POST if PUT not supported
-        let r = await fetch(`${API}/records/${existing.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type':'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (!r.ok) {
-          await fetch(`${API}/records/${existing.id}`, { method:'DELETE' });
-          r = await fetch(`${API}/records`, {
+        // Try PUT (id in query string for our single route setup)
+        let data = await getJSON(
+          `${API}/records?id=${encodeURIComponent(existing.id)}`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type':'application/json' },
+            body: JSON.stringify(payload)
+          }
+        );
+
+        // If PUT not supported, fall back to DELETE + POST
+        if (!data) {
+          await fetch(`${API}/records?id=${encodeURIComponent(existing.id)}`, { method:'DELETE' });
+          data = await getJSON(`${API}/records`, {
             method: 'POST',
             headers: { 'Content-Type':'application/json' },
             body: JSON.stringify(payload)
           });
         }
-        const data = await r.json();
+
         setSaving(false);
-        if (data.error) { setMsg(data.error); return; }
-        setMsg(`Entry for report ${form.dojReportNumber} save`);
+        if (!data || data.error) { setMsg(data?.error || 'Failed to save (overwrite).'); return; }
+        setMsg(`Entry for report ${form.dojReportNumber} saved`);
         onSaved?.(data);
         hardClear();
         return;
       }
 
-      // Normal create
-      const r = await fetch(`${API}/records`, {
+      // Create
+      const created = await getJSON(`${API}/records`, {
         method:'POST',
         headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify(payload)
       });
-      const data = await r.json();
+
       setSaving(false);
-      if (data.error) { setMsg(data.error); return; }
-      setMsg(`Entry for report ${form.dojReportNumber} save`);
-      onSaved?.(data);
+      if (!created || created.error) { setMsg(created?.error || 'Failed to save.'); return; }
+      setMsg(`Entry for report ${form.dojReportNumber} saved`);
+      onSaved?.(created);
       hardClear();
 
     } catch (e) {
@@ -284,14 +297,13 @@ function Form({ onSaved }){
         </select>
       </label>
 
-      {form.verdict==='BENCH_REQUEST' ? (
-        <label className="field"><Label>Verdict Number</Label>
-          <input value={form.benchVerdictNumber} onChange={e=>upd('benchVerdictNumber',e.target.value)}/>
-        </label>
-      ) : <div /> }
+      {form.verdict==='BENCH_REQUEST'
+        ? <label className="field"><Label>Verdict Number</Label><input value={form.benchVerdictNumber} onChange={e=>upd('benchVerdictNumber',e.target.value)}/></label>
+        : <div />
+      }
     </Row>
 
-    {/* Row 6: Charges Removed? | Charges Replaced? (conditional) */}
+    {/* Row 6: Charges Removed? | Charges Replaced? */}
     <Row>
       <label className="field"><Label>Charges Removed?</Label>
         <select value={form.chargesRemoved} onChange={e=>upd('chargesRemoved',e.target.value)}>
@@ -299,13 +311,15 @@ function Form({ onSaved }){
         </select>
       </label>
 
-      {form.chargesRemoved==='yes' ? (
-        <label className="field"><Label>Charges Replaced?</Label>
-          <select value={form.chargesReplaced} onChange={e=>upd('chargesReplaced',e.target.value)}>
-            <option value="no">No</option><option value="yes">Yes</option>
-          </select>
-        </label>
-      ) : <div /> }
+      {form.chargesRemoved==='yes'
+        ? (
+          <label className="field"><Label>Charges Replaced?</Label>
+            <select value={form.chargesReplaced} onChange={e=>upd('chargesReplaced',e.target.value)}>
+              <option value="no">No</option><option value="yes">Yes</option>
+            </select>
+          </label>
+        ) : <div />
+      }
     </Row>
 
     {/* Row 7: Fine | Sentence */}
@@ -334,7 +348,7 @@ function Form({ onSaved }){
       </div>
     </div>
     {msg && <div style={{marginTop:10,color:'var(--text-light)'}}>{msg}</div>}
-  </form>)
+  </form>);
 }
 
 /* ========== LAST LOGGED CARD (Home) ========== */
@@ -343,36 +357,20 @@ function LastLogged(){
 
   useEffect(() => {
     (async () => {
-      try {
-        const res = await fetch(`${API}/records`);
-        const rows = await res.json();
-        if (!Array.isArray(rows) || rows.length === 0) {
-          setLatest(null);
-          return;
-        }
+      const rows = await getJSON(`${API}/records`);
+      if (!Array.isArray(rows) || rows.length === 0) { setLatest(null); return; }
 
-        // Only consider real save timestamps (never the case 'date')
-        const getSaveTs = (r) => {
-          const t = r.savedAt || r.createdAt || r.updatedAt || r._created || r._ts;
-          const n = Date.parse(t);
-          return Number.isFinite(n) ? n : -Infinity;
-        };
+      const getTs = (r) => {
+        const t = r.savedAt || r.createdAt || r.updatedAt || r._created || r._ts;
+        const n = Date.parse(t); return Number.isFinite(n) ? n : -Infinity;
+      };
 
-        // Pick the row with the highest save timestamp; tie-break by later index
-        let bestIdx = 0;
-        let bestTs  = getSaveTs(rows[0]);
-        for (let i = 1; i < rows.length; i++) {
-          const t = getSaveTs(rows[i]);
-          if (t > bestTs || (t === bestTs && i > bestIdx)) {
-            bestTs = t;
-            bestIdx = i;
-          }
-        }
-
-        setLatest(rows[bestIdx]);
-      } catch {
-        setLatest(null);
+      let bestIdx = 0, bestTs = getTs(rows[0]);
+      for (let i = 1; i < rows.length; i++) {
+        const t = getTs(rows[i]);
+        if (t > bestTs || (t === bestTs && i > bestIdx)) { bestTs = t; bestIdx = i; }
       }
+      setLatest(rows[bestIdx]);
     })();
   }, []);
 
@@ -381,18 +379,10 @@ function LastLogged(){
   const doj = latest.dojReportNumber || 'N/A';
   const by  = latest.loggedBy || latest.by || 'Unknown';
 
-  // Prefer saved/created timestamps; if absent, show the case date as DATE-ONLY
   const addedISO =
-    latest.savedAt ??
-    latest.createdAt ??
-    latest.updatedAt ??
-    latest._created ??
-    latest._ts ??
-    null;
+    latest.savedAt ?? latest.createdAt ?? latest.updatedAt ?? latest._created ?? latest._ts ?? null;
 
-  const when = addedISO
-    ? fmtDateTimeEST(addedISO) + ' EST'
-    : fmtDateUS(latest.date); // date-only fallback (no 8pm artifact)
+  const when = addedISO ? (fmtDateTimeEST(addedISO)+' EST') : fmtDateUS(latest.date);
 
   return (
     <div className="card" style={{marginTop:16}}>
@@ -404,71 +394,82 @@ function LastLogged(){
   );
 }
 
-
 /* ========== ANALYTICS ========== */
 function Analytics(){
-  const [staff,setStaff]=useState([]); const staffMap=useMemo(()=>Object.fromEntries(staff.map(s=>[String(s.id),s])),[staff])
-  const [from,setFrom]=useState(daysAgoYMD(30)),[to,setTo]=useState(todayYMD())
-  const [staffId,setStaffId]=useState(''),[cellCallType,setCellCallType]=useState(''),[incidentType,setIncidentType]=useState('')
-  const [rows,setRows]=useState([]),[loading,setLoading]=useState(false),[copied,setCopied]=useState(false)
+  const [staff,setStaff]=useState([]);
+  const staffMap=useMemo(()=>Object.fromEntries(staff.map(s=>[String(s.id),s])),[staff]);
 
-  useEffect(()=>{fetch(`${API}/staff`).then(r=>r.json()).then(setStaff)},[])
+  const [from,setFrom]=useState(daysAgoYMD(30));
+  const [to,setTo]=useState(todayYMD());
+  const [staffId,setStaffId]=useState('');
+  const [cellCallType,setCellCallType]=useState('');
+  const [incidentType,setIncidentType]=useState('');
+  const [rows,setRows]=useState([]);
+  const [loading,setLoading]=useState(false);
+  const [copied,setCopied]=useState(false);
+
+  useEffect(()=>{
+    (async () => {
+      const rows = await getJSON(`${API}/staff`);
+      setStaff(Array.isArray(rows) ? rows : []);
+    })();
+  },[]);
 
   async function load(){
-    setLoading(true)
-    const qs=new URLSearchParams()
-    if(from)qs.set('from',toLocalMidnightISO(from))
+    setLoading(true);
+    const qs=new URLSearchParams();
+    if(from)qs.set('from',toLocalMidnightISO(from));
     if(to){const end=new Date(to);end.setDate(end.getDate()+1);qs.set('to',end.toISOString())}
-    if(staffId)qs.set('staffId',staffId)        // server should filter LEADING only
-    if(cellCallType)qs.set('cellCallType',cellCallType)
-    if(incidentType)qs.set('incidentType',incidentType)
-    const res=await fetch(`${API}/records?`+qs.toString())
-    const data=await res.json()
-    setRows(data);setLoading(false)
+    if(staffId)qs.set('staffId',staffId);
+    if(cellCallType)qs.set('cellCallType',cellCallType);
+    if(incidentType)qs.set('incidentType',incidentType);
+
+    const data = await getJSON(`${API}/records?`+qs.toString());
+    setRows(Array.isArray(data) ? data : []); // never crash UI on API error
+    setLoading(false);
   }
-  useEffect(()=>{load()},[])
+  useEffect(()=>{load()},[]);
 
   const kpi=useMemo(()=>{
-    const total=rows.length
-    const chargesRemoved=rows.filter(r=>r.chargesRemoved).length
-    const chargesReplaced=rows.filter(r=>r.chargesRemoved && r.chargesReplaced).length
-    const bench=rows.filter(r=>r.verdict==='BENCH_REQUEST').length
-    const totalFine=rows.reduce((s,r)=>s+(Number(r.fine)||0),0)
-    const totalMonths=rows.reduce((s,r)=>s+(Number(r.sentenceMonths)||0),0)
-    const byType=rows.reduce((m,r)=>((m[r.cellCallType]=(m[r.cellCallType]||0)+1),m),{})
-    // Cell Calls Supervised: count records where staffId appears in supervising[]
+    const total=rows.length;
+    const chargesRemoved=rows.filter(r=>r.chargesRemoved).length;
+    const chargesReplaced=rows.filter(r=>r.chargesRemoved && r.chargesReplaced).length;
+    const bench=rows.filter(r=>r.verdict==='BENCH_REQUEST').length;
+    const totalFine=rows.reduce((s,r)=>s+(Number(r.fine)||0),0);
+    const totalMonths=rows.reduce((s,r)=>s+(Number(r.sentenceMonths)||0),0);
+    const byType=rows.reduce((m,r)=>((m[r.cellCallType]=(m[r.cellCallType]||0)+1),m),{});
     const supervisionCount = staffId
       ? rows.filter(r => Array.isArray(r.supervising) && r.supervising.map(String).includes(String(staffId))).length
-      : rows.reduce((s,r)=> s + (Array.isArray(r.supervising) ? r.supervising.length : 0), 0)
-    return{total,chargesRemoved,chargesReplaced,bench,totalFine,totalMonths,byType,supervisionCount}
-  },[rows,staffId])
+      : rows.reduce((s,r)=> s + (Array.isArray(r.supervising) ? r.supervising.length : 0), 0);
+    return{total,chargesRemoved,chargesReplaced,bench,totalFine,totalMonths,byType,supervisionCount};
+  },[rows,staffId]);
 
   async function deleteRecord(id){
-    if(!window.confirm('Delete this record?'))return
-    await fetch(`${API}/records/${encodeURIComponent(id)}`, { method:'DELETE' })
-    await load()
+    if(!window.confirm('Delete this record?'))return;
+    await fetch(`${API}/records?id=${encodeURIComponent(id)}`, { method:'DELETE' });
+    await load();
   }
 
   async function generateReport(){
-    const lines=[]
-    lines.push(`## DOJ Analytics Report`)
-    lines.push(`**Date Range:** ${from} → ${to}`)
+    const lines=[];
+    lines.push(`## DOJ Analytics Report`);
+    lines.push(`**Date Range:** ${from} → ${to}`);
     if(staffId){const s=staffMap[String(staffId)];lines.push(`**Lead Attorney:** ${s?.name||staffId}`)}
-    lines.push(`**Total Records (Led):** ${kpi.total}`)
-    lines.push(`**Cell Calls Supervised:** ${kpi.supervisionCount}`)
-    lines.push(`**Charges Removed:** ${kpi.chargesRemoved}`)
-    lines.push(`**Charges Replaced:** ${kpi.chargesReplaced}`)
-    lines.push(`**Bench Requests:** ${kpi.bench}`)
-    lines.push(`**Total Fine:** $${kpi.totalFine}`)
-    lines.push(`**Total Sentence Months:** ${kpi.totalMonths}`)
-    lines.push(`\n### Breakdown`)
-    lines.push(`| Date | Incident | DOJ# | Lead | Verdict | Fine | Sentence | Type |`)
-    lines.push(`|------|-----------|------|------|----------|------|-----------|------|`)
+    lines.push(`**Total Records (Led):** ${kpi.total}`);
+    lines.push(`**Cell Calls Supervised:** ${kpi.supervisionCount}`);
+    lines.push(`**Charges Removed:** ${kpi.chargesRemoved}`);
+    lines.push(`**Charges Replaced:** ${kpi.chargesReplaced}`);
+    lines.push(`**Bench Requests:** ${kpi.bench}`);
+    lines.push(`**Total Fine:** $${kpi.totalFine}`);
+    lines.push(`**Total Sentence Months:** ${kpi.totalMonths}`);
+    lines.push(`\n### Breakdown`);
+    lines.push(`| Date | Incident | DOJ# | Lead | Verdict | Fine | Sentence | Type |`);
+    lines.push(`|------|-----------|------|------|----------|------|-----------|------|`);
     for(const r of rows){
-      lines.push(`| ${fmtDateUS(r.createdAt||r.date)} | ${r.incidentId} | ${r.dojReportNumber} | ${staffMap[String(r.leadingId)]?.name||r.leadingId} | ${r.verdict} | ${r.fine??'-'} | ${r.sentenceMonths??'-'} | ${r.cellCallType} |`)
+      lines.push(`| ${fmtDateUS(r.createdAt||r.date)} | ${r.incidentId} | ${r.dojReportNumber} | ${staffMap[String(r.leadingId)]?.name||r.leadingId} | ${r.verdict} | ${r.fine??'-'} | ${r.sentenceMonths??'-'} | ${r.cellCallType} |`);
     }
-    await navigator.clipboard.writeText(lines.join('\n'))
-    setCopied(true); setTimeout(()=>setCopied(false),2000)
+    await navigator.clipboard.writeText(lines.join('\n'));
+    setCopied(true); setTimeout(()=>setCopied(false),2000);
   }
 
   return (
@@ -486,11 +487,15 @@ function Analytics(){
       <label className="field"><Label>Cell Call Type</Label>
         <select value={cellCallType} onChange={e=>setCellCallType(e.target.value)}>
           <option value="">All</option>
-          <option value="CELL_CALL">Cell Call</option><option value="WARRANT_ARREST">Warrant Arrest</option><option value="SENTENCING_HEARING">Sentencing Hearing</option>
+          <option value="CELL_CALL">Cell Call</option>
+          <option value="WARRANT_ARREST">Warrant Arrest</option>
+          <option value="SENTENCING_HEARING">Sentencing Hearing</option>
         </select></label>
       <label className="field"><Label>Incident Type</Label>
         <select value={incidentType} onChange={e=>setIncidentType(e.target.value)}>
-          <option value="">All</option><option value="HUT">HUT</option><option value="CRIMINAL">CRIMINAL</option>
+          <option value="">All</option>
+          <option value="HUT">HUT</option>
+          <option value="CRIMINAL">CRIMINAL</option>
         </select></label>
     </Row>
 
@@ -548,19 +553,24 @@ function Analytics(){
         </div>
       )}
     </div>
-  </div>)
+  </div>);
 }
 
 /* ========== APP SHELL ========== */
 export default function App(){
-  const [view,setView]=useState('landing')
-  const [status,setStatus]=useState('Checking API...')
-  const [staffCount,setStaffCount]=useState(0)
+  const [view,setView]=useState('landing');
+  const [status,setStatus]=useState('Checking API...');
+  const [staffCount,setStaffCount]=useState(0);
 
   useEffect(()=>{
-    fetch(`${API}/health`).then(r=>r.json()).then(()=>setStatus('API OK')).catch(()=>setStatus('API unreachable'))
-    fetch(`${API}/staff`).then(r=>r.json()).then(rows=>setStaffCount(rows.length)).catch(()=>setStaffCount(0))
-  },[])
+    (async () => {
+      const h = await getJSON(`${API}/health`);
+      setStatus(h && h.ok ? 'API OK' : 'API unreachable');
+
+      const s = await getJSON(`${API}/staff`);
+      setStaffCount(Array.isArray(s) ? s.length : 0);
+    })();
+  },[]);
 
   return (
   <div style={{maxWidth:1100,margin:'24px auto'}}>
@@ -597,5 +607,5 @@ export default function App(){
 
     {view==='form' && <Form onSaved={()=>console.log('saved')} />}
     {view==='analytics' && <Analytics />}
-  </div>)
+  </div>);
 }
