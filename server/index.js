@@ -4,12 +4,15 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { nanoid } from 'nanoid';
+import recordsRouter from './routes/records.js'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+
+app.use('/api/records', recordsRouter);
 
 const DATA_DIR = path.join(__dirname, 'data');
 const STAFF_FILE = path.join(DATA_DIR, 'staff.json');
