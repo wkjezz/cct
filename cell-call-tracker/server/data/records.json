@@ -1,0 +1,25 @@
+[
+  {
+    "id": "y1dcgsplwzJW",
+    "date": "2025-10-30T00:00:00.000Z",
+    "incidentId": "123456",
+    "dojReportNumber": "123457",
+    "leadingId": 6,
+    "attorneyObservers": [
+      8
+    ],
+    "paralegalObservers": [
+      12
+    ],
+    "verdict": "GUILTY",
+    "benchVerdictNumber": null,
+    "chargesRemoved": true,
+    "chargesReplaced": true,
+    "fine": 69,
+    "sentenceMonths": 420,
+    "cellCallType": "CELL_CALL",
+    "incidentType": "HUT",
+    "notes": "",
+    "loggedBy": "dev-ui"
+  }
+]

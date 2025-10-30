@@ -1,0 +1,93 @@
+:root{
+  --bg:#0b1736;           /* page background (navy) */
+  --card:#13244b;         /* card background (deep blue) */
+  --accent:#243e7a;       /* header/nav/button bg */
+  --text:#f0d98a;         /* gold body text */
+  --text-light:#d9c36b;   /* darker golden tone for headings and nav */
+  --muted:#b9ad77;        /* muted text */
+  --border:#2d3e6f;       /* borders */
+  --divider: rgba(173,216,230,0.10); /* subtle light-blue divider */
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:"Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+}
+
+/* Typography */
+h1,h2,h3,h4,h5,h6{ color:var(--text-light); margin:0 0 .5rem }
+p,span,small,li,div{ color:var(--text); }
+small,.muted{ color:var(--muted); }
+a{ color:var(--text-light); text-decoration:underline }
+
+/* Layout */
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:16px;
+  box-shadow:0 2px 8px rgba(0,0,0,.25);
+}
+header.card{
+  background:var(--accent);
+  border-color:var(--border);
+  color:var(--text-light);
+}
+.row{ display:grid; grid-template-columns:1fr 1fr; gap:12px }
+
+/* subtle section divider used to separate groups inside cards/forms */
+.section-sep{
+  /* Subtle but more visible separator: extends to card edges */
+  height:8px;
+  border-radius:6px;
+  margin:12px -16px; /* reach card padding edges (card padding is 16px) */
+  background: linear-gradient(90deg, rgba(173,216,230,0.18), rgba(173,216,230,0.06));
+  box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset;
+}
+
+/* Buttons */
+.btn{
+  border-radius:12px;
+  padding:10px 14px;
+  border:1px solid var(--border);
+  background:var(--accent);
+  color:var(--text-light);
+  cursor:pointer;
+  font-weight:600;
+}
+.btn:hover{ background:#314d91 }
+.btn.primary{
+  background:var(--text);
+  color:var(--bg);
+}
+
+/* Forms */
+label.field{ display:block }
+.label{ font-size:12px; color:var(--muted); margin:6px 0 }
+input,select,textarea{
+  width:100%; padding:10px;
+  border-radius:12px; border:1px solid var(--border);
+  background:#0e1d44; color:var(--text-light);
+}
+input::placeholder, textarea::placeholder{ color:var(--muted) }
+
+/* Tables */
+table{ width:100%; border-collapse:collapse }
+th,td{ padding:10px; border-top:1px solid var(--border); font-size:14px; color:var(--text) }
+th{ background:#0f214c; color:var(--text-light) }
+
+/* Pills */
+.pill{
+  display:inline-block;
+  background:#1b2f61;
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:2px 8px;
+  font-size:12px;
+  color:var(--text-light);
+}
