@@ -13,10 +13,9 @@ export default async function handler(req, res) {
       return res.status(405).end('Method Not Allowed');
     }
 
-    const raw = await fs.readFile(RECORDS_PATH, 'utf8');
+    const raw = await fs.readFile(RECORDS_PATH, 'utf8').catch(() => '[]');
     let rows = JSON.parse(raw) || [];
 
-    // Filters: from, to, staffId (leading only), cellCallType, incidentType
     const q = req.query ?? {};
     const from = q.from ? new Date(q.from) : null;
     const to   = q.to   ? new Date(q.to)   : null;
@@ -37,6 +36,6 @@ export default async function handler(req, res) {
     return res.status(200).json(rows);
   } catch (e) {
     console.error(e);
-    return res.status(200).json([]); // safe fallback
+    return res.status(200).json([]);
   }
 }
