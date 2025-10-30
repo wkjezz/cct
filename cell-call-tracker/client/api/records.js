@@ -1,41 +1,40 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname  = path.dirname(__filename);
-const RECORDS_PATH = path.join(__dirname, '..', 'data', 'records.json');
+import { kv } from '@vercel/kv'
+import { randomUUID } from 'crypto'
 
 export default async function handler(req, res) {
   try {
-    if (req.method !== 'GET') {
-      res.setHeader('Allow', 'GET');
-      return res.status(405).end('Method Not Allowed');
+    if (req.method === 'GET') {
+      // newest first
+      const ids = await kv.zrange('records:index', 0, -1, { rev: true })
+      const records = await Promise.all(ids.map(id => kv.hgetall(`record:${id}`)))
+      return res.status(200).json(records.filter(Boolean))
     }
 
-    const raw = await fs.readFile(RECORDS_PATH, 'utf8').catch(() => '[]');
-    let rows = JSON.parse(raw) || [];
+    if (req.method === 'POST') {
+      // Vercel Node functions may give string bodies; normalize it
+      const b = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {})
 
-    const q = req.query ?? {};
-    const from = q.from ? new Date(q.from) : null;
-    const to   = q.to   ? new Date(q.to)   : null;
-    const staffId      = q.staffId ? String(q.staffId) : '';
-    const cellCallType = q.cellCallType || '';
-    const incidentType = q.incidentType || '';
+      if (!b.incidentId) return res.status(400).json({ error: 'incidentId required' })
+      if (!b.dojReportNumber) return res.status(400).json({ error: 'dojReportNumber required' })
+      if (b.leadingId === undefined || b.leadingId === null) {
+        return res.status(400).json({ error: 'leadingId required' })
+      }
 
-    rows = rows.filter(r => {
-      const t = new Date(r.date);
-      if (from && t < from) return false;
-      if (to   && t > to)   return false;
-      if (staffId && String(r.leadingId) !== staffId) return false;
-      if (cellCallType && r.cellCallType !== cellCallType) return false;
-      if (incidentType && r.incidentType !== incidentType) return false;
-      return true;
-    });
+      const id = b.id || randomUUID()
+      const createdAt = b.createdAt || new Date().toISOString()
+      const record = { ...b, id, createdAt }
 
-    return res.status(200).json(rows);
-  } catch (e) {
-    console.error(e);
-    return res.status(200).json([]);
+      // store record
+      await kv.hset(`record:${id}`, record)
+      await kv.zadd('records:index', { score: Date.parse(createdAt), member: id })
+
+      return res.status(200).json({ ok: true, id })
+    }
+
+    res.setHeader('Allow', 'GET, POST')
+    return res.status(405).end('Method Not Allowed')
+  } catch (err) {
+    console.error('API /api/records error:', err)
+    return res.status(500).json({ error: 'Server error' })
   }
 }
