@@ -2,17 +2,20 @@ import React, { useEffect, useMemo, useState } from 'react'
 
 const API = '/api'
 
-// ===== Utility helpers =====
+/* ========== Utilities ========== */
 function Label({children}){ return <div className="label">{children}</div> }
 function Row({children}){ return <div className="row">{children}</div> }
 function Divider(){ return <div className="section-sep" /> }
-function toLocalMidnightISO(ymd){ const [y,m,d]=ymd.split('-').map(Number); return new Date(y,m-1,d,0,0,0,0).toISOString() }
+function toLocalMidnightISO(ymd){
+  const [y,m,d]=ymd.split('-').map(Number);
+  return new Date(y,m-1,d,0,0,0,0).toISOString()
+}
 function todayYMD(){ return new Date().toISOString().slice(0,10) }
 function daysAgoYMD(n){ const t=new Date(); t.setDate(t.getDate()-n); return t.toISOString().slice(0,10) }
 function fmtDateUS(iso){ try{ const d=new Date(iso); return d.toLocaleDateString('en-US') }catch{ return iso } }
 function fmtDateTimeEST(iso){ try{ return new Date(iso).toLocaleString('en-US',{ timeZone:'America/New_York' }) }catch{ return iso } }
 
-// ===== Chip list helper =====
+/* ========== Chips (selected people) ========== */
 function ChipList({items, render, onRemove}){
   return (
     <div style={{display:'flex', gap:8, flexWrap:'wrap', marginTop:8}}>
@@ -26,7 +29,7 @@ function ChipList({items, render, onRemove}){
   )
 }
 
-// ===== AddSelect dropdown with Add button =====
+/* ========== AddSelect (dropdown + Add) ========== */
 function AddSelect({label, options, selectedIds, onAdd, onRemove}){
   const [pick, setPick] = useState('')
   const left = options.filter(o => !selectedIds.includes(String(o.id)))
@@ -57,7 +60,7 @@ function AddSelect({label, options, selectedIds, onAdd, onRemove}){
   )
 }
 
-// ======== FORM: Report Cell Call ========
+/* ========== FORM: Report Cell Call ========== */
 function Form({ onSaved }){
   const [staff, setStaff] = useState([])
   const [saving, setSaving] = useState(false)
@@ -76,7 +79,7 @@ function Form({ onSaved }){
     return allowed
   }, [staff])
 
-  const init = ()=>({
+  const init = () => ({
     date: todayYMD(),
     incidentId: '',
     dojReportNumber: '',
@@ -109,19 +112,21 @@ function Form({ onSaved }){
     if(form.verdict==='BENCH_REQUEST'&&!form.benchVerdictNumber) return 'Verdict # required'
     return ''
   }
-async function findByDOJ(doj) {
-  const norm = v => String(v ?? '').trim();
-  const wanted = norm(doj);
-  if (!wanted) return null;
 
-  // Always fetch all and do an exact match client-side.
-  const res = await fetch(`${API}/records`);
-  if (!res.ok) return null;
-  const all = await res.json();
-  if (!Array.isArray(all)) return null;
+  // Exact-match duplicate check, client-side
+  async function findByDOJ(doj) {
+    const norm = v => String(v ?? '').trim();
+    const wanted = norm(doj);
+    if (!wanted) return null;
 
-  return all.find(r => norm(r.dojReportNumber) === wanted) || null;
-}
+    const res = await fetch(`${API}/records`);
+    if (!res.ok) return null;
+    const all = await res.json();
+    if (!Array.isArray(all)) return null;
+
+    return all.find(r => norm(r.dojReportNumber) === wanted) || null;
+  }
+
   async function submit(e){
     e.preventDefault();
 
@@ -133,6 +138,8 @@ async function findByDOJ(doj) {
 
     const payload = {
       date: toLocalMidnightISO(form.date),
+      createdAt: new Date().toISOString(), // ensure true save-time
+      savedAt:   new Date().toISOString(),
       incidentId: form.incidentId,
       dojReportNumber: form.dojReportNumber,
       leadingId: Number(form.leadingId),
@@ -152,21 +159,19 @@ async function findByDOJ(doj) {
     };
 
     try {
-      // 1) Check for duplicate DOJ #
+      // Duplicate check by DOJ #
       const existing = await findByDOJ(form.dojReportNumber);
 
       if (existing) {
         const ok = window.confirm(`Cell Call for Report ${form.dojReportNumber} has already been submitted, do you wish to overwrite it?`);
         if (!ok) { setSaving(false); setMsg('Canceled.'); return; }
 
-        // Try PUT first (preferred)
+        // Prefer PUT; fall back to DELETE+POST if PUT not supported
         let r = await fetch(`${API}/records/${existing.id}`, {
           method: 'PUT',
           headers: { 'Content-Type':'application/json' },
           body: JSON.stringify(payload)
         });
-
-        // If PUT not supported, fall back to DELETE + POST
         if (!r.ok) {
           await fetch(`${API}/records/${existing.id}`, { method:'DELETE' });
           r = await fetch(`${API}/records`, {
@@ -175,7 +180,6 @@ async function findByDOJ(doj) {
             body: JSON.stringify(payload)
           });
         }
-
         const data = await r.json();
         setSaving(false);
         if (data.error) { setMsg(data.error); return; }
@@ -185,7 +189,7 @@ async function findByDOJ(doj) {
         return;
       }
 
-      // 2) No duplicate → normal create
+      // Normal create
       const r = await fetch(`${API}/records`, {
         method:'POST',
         headers:{ 'Content-Type':'application/json' },
@@ -209,40 +213,13 @@ async function findByDOJ(doj) {
   <form className="card" onSubmit={submit} style={{marginTop:16}}>
     <h2>Report Cell Call</h2>
 
+    {/* Row 1: Date | Cell Call Type */}
     <Row>
-      <label className="field"><Label>Date</Label><input type="date" value={form.date} onChange={e=>upd('date',e.target.value)} /></label>
-    </Row>
+      <label className="field">
+        <Label>Date</Label>
+        <input type="date" value={form.date} onChange={e=>upd('date',e.target.value)} />
+      </label>
 
-    <Row>
-      <label className="field"><Label>DOJ Report # (6 chars)</Label><input value={form.dojReportNumber} onChange={e=>upd('dojReportNumber',six(e.target.value))} maxLength={6}/></label>
-      <label className="field"><Label>Incident ID (6 chars)</Label><input value={form.incidentId} onChange={e=>upd('incidentId',six(e.target.value))} maxLength={6}/></label>
-    </Row>
-
-    <Divider />
-
-    <Row>
-            <label className="field"><Label>Attorney Leading</Label>
-        <select value={form.leadingId} onChange={e=>upd('leadingId',e.target.value)}>
-          <option value="">Select…</option>{staffOpts.map(s=><option key={s.id} value={s.id}>{s.name}{s.role?` (${s.role})`:''}</option>)}
-        </select></label>
-      <AddSelect key={`sup-${formKey}`} label="Attorney Supervising" options={supervisingOpts}
-        selectedIds={form.supervising} onAdd={id=>upd('supervising',[...new Set([...form.supervising,String(id)])])}
-        onRemove={id=>upd('supervising',form.supervising.filter(x=>x!==String(id)))}/>
-    </Row>
-
-    <Row>
-      <AddSelect key={`att-${formKey}`} label="Attorney Observing" options={staffOpts}
-        selectedIds={form.attorneyObservers} onAdd={id=>upd('attorneyObservers',[...new Set([...form.attorneyObservers,String(id)])])}
-        onRemove={id=>upd('attorneyObservers',form.attorneyObservers.filter(x=>x!==String(id)))}/>
-      <AddSelect key={`par-${formKey}`} label="Paralegal Observing" options={staffOpts}
-        selectedIds={form.paralegalObservers} onAdd={id=>upd('paralegalObservers',[...new Set([...form.paralegalObservers,String(id)])])}
-        onRemove={id=>upd('paralegalObservers',form.paralegalObservers.filter(x=>x!==String(id)))}/>
-    </Row>
-
-    <Divider />
-
-    {/* Cell Call Type + Incident Type */}
-    <Row>
       <label className="field">
         <Label>Cell Call Type</Label>
         <select value={form.cellCallType} onChange={(e) => upd('cellCallType', e.target.value)}>
@@ -251,18 +228,51 @@ async function findByDOJ(doj) {
           <option value="SENTENCING_HEARING">Sentencing Hearing</option>
         </select>
       </label>
+    </Row>
 
-      <label className="field">
-        <Label>Incident Type</Label>
-        <select value={form.incidentType} onChange={(e)=>upd('incidentType', e.target.value)}>
-          <option value="HUT">HUT</option>
-          <option value="CRIMINAL">CRIMINAL</option>
-        </select>
+    {/* Row 2: DOJ Report # | Incident ID */}
+    <Row>
+      <label className="field"><Label>DOJ Report # (6 chars)</Label>
+        <input value={form.dojReportNumber} onChange={e=>upd('dojReportNumber',six(e.target.value))} maxLength={6}/>
+      </label>
+      <label className="field"><Label>Incident ID (6 chars)</Label>
+        <input value={form.incidentId} onChange={e=>upd('incidentId',six(e.target.value))} maxLength={6}/>
       </label>
     </Row>
 
     <Divider />
 
+    {/* Row 3: Attorney Leading | Attorney Supervising (Add) */}
+    <Row>
+      <label className="field"><Label>Attorney Leading</Label>
+        <select value={form.leadingId} onChange={e=>upd('leadingId',e.target.value)}>
+          <option value="">Select…</option>
+          {staffOpts.map(s=><option key={s.id} value={s.id}>{s.name}{s.role?` (${s.role})`:''}</option>)}
+        </select>
+      </label>
+
+      <AddSelect key={`sup-${formKey}`} label="Attorney Supervising" options={supervisingOpts}
+        selectedIds={form.supervising}
+        onAdd={id=>upd('supervising',[...new Set([...form.supervising,String(id)])])}
+        onRemove={id=>upd('supervising',form.supervising.filter(x=>x!==String(id)))}/>
+    </Row>
+
+    {/* Row 4: Attorney Observing | Paralegal Observing */}
+    <Row>
+      <AddSelect key={`att-${formKey}`} label="Attorney Observing" options={staffOpts}
+        selectedIds={form.attorneyObservers}
+        onAdd={id=>upd('attorneyObservers',[...new Set([...form.attorneyObservers,String(id)])])}
+        onRemove={id=>upd('attorneyObservers',form.attorneyObservers.filter(x=>x!==String(id)))}/>
+
+      <AddSelect key={`par-${formKey}`} label="Paralegal Observing" options={staffOpts}
+        selectedIds={form.paralegalObservers}
+        onAdd={id=>upd('paralegalObservers',[...new Set([...form.paralegalObservers,String(id)])])}
+        onRemove={id=>upd('paralegalObservers',form.paralegalObservers.filter(x=>x!==String(id)))}/>
+    </Row>
+
+    <Divider />
+
+    {/* Row 5: Verdict | Bench Verdict Number (conditional) */}
     <Row>
       <label className="field"><Label>Verdict</Label>
         <select value={form.verdict} onChange={e=>upd('verdict',e.target.value)}>
@@ -270,31 +280,51 @@ async function findByDOJ(doj) {
           <option value="NOT_GUILTY">Not Guilty</option>
           <option value="NO_CONTEST">No Contest</option>
           <option value="BENCH_REQUEST">Bench Request</option>
-        </select></label>
-      {form.verdict==='BENCH_REQUEST'&&(
-        <label className="field"><Label>Verdict Number</Label><input value={form.benchVerdictNumber} onChange={e=>upd('benchVerdictNumber',e.target.value)}/></label>
-      )}
+        </select>
+      </label>
+
+      {form.verdict==='BENCH_REQUEST' ? (
+        <label className="field"><Label>Verdict Number</Label>
+          <input value={form.benchVerdictNumber} onChange={e=>upd('benchVerdictNumber',e.target.value)}/>
+        </label>
+      ) : <div /> }
     </Row>
 
+    {/* Row 6: Charges Removed? | Charges Replaced? (conditional) */}
     <Row>
       <label className="field"><Label>Charges Removed?</Label>
         <select value={form.chargesRemoved} onChange={e=>upd('chargesRemoved',e.target.value)}>
           <option value="no">No</option><option value="yes">Yes</option>
-        </select></label>
-      {form.chargesRemoved==='yes'&&(
+        </select>
+      </label>
+
+      {form.chargesRemoved==='yes' ? (
         <label className="field"><Label>Charges Replaced?</Label>
           <select value={form.chargesReplaced} onChange={e=>upd('chargesReplaced',e.target.value)}>
             <option value="no">No</option><option value="yes">Yes</option>
-          </select></label>
-      )}
+          </select>
+        </label>
+      ) : <div /> }
     </Row>
 
+    {/* Row 7: Fine | Sentence */}
     <Row>
-      <label className="field"><Label>Fine ($)</Label><input type="number" value={form.fine} onChange={e=>upd('fine',e.target.value)}/></label>
-      <label className="field"><Label>Sentence (months)</Label><input type="number" value={form.sentenceMonths} onChange={e=>upd('sentenceMonths',e.target.value)}/></label>
+      <label className="field"><Label>Fine ($)</Label>
+        <input type="number" value={form.fine} onChange={e=>upd('fine',e.target.value)}/>
+      </label>
+      <label className="field"><Label>Sentence (months)</Label>
+        <input type="number" value={form.sentenceMonths} onChange={e=>upd('sentenceMonths',e.target.value)}/>
+      </label>
     </Row>
 
-    <label className="field"><Label>Notes</Label><textarea rows={4} value={form.notes} onChange={e=>upd('notes',e.target.value)}/></label>
+    <Divider />
+
+    {/* Notes full width */}
+    <label className="field"><Label>Notes</Label>
+      <textarea rows={4} value={form.notes} onChange={e=>upd('notes',e.target.value)}/>
+    </label>
+
+    {/* Actions */}
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:12}}>
       <span className="pill">Logger: {form.by}</span>
       <div style={{display:'flex',gap:8}}>
@@ -306,33 +336,62 @@ async function findByDOJ(doj) {
   </form>)
 }
 
-// ======== LAST LOGGED CARD (Home) ========
+/* ========== LAST LOGGED CARD (Home) ========== */
 function LastLogged(){
-  const [latest,setLatest]=useState(null)
+  const [latest, setLatest] = useState(null);
 
-  useEffect(()=>{
-    // Prefer a dedicated endpoint if you have it
-    fetch(`${API}/last`).then(r=>r.ok?r.json():Promise.reject())
-      .then(setLatest)
-      .catch(()=> {
-        // Fallback: pull all and choose newest by createdAt or date
-        fetch(`${API}/records`).then(r=>r.json()).then(rows=>{
-          if(Array.isArray(rows) && rows.length){
-            const rec = rows.slice().sort((a,b)=>{
-              const ax = new Date(b.createdAt||b.date) - new Date(a.createdAt||a.date)
-              return ax
-            })[0]
-            setLatest(rec)
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API}/records`);
+        const rows = await res.json();
+        if (!Array.isArray(rows) || rows.length === 0) {
+          setLatest(null);
+          return;
+        }
+
+        // Only consider real save timestamps (never the case 'date')
+        const getSaveTs = (r) => {
+          const t = r.savedAt || r.createdAt || r.updatedAt || r._created || r._ts;
+          const n = Date.parse(t);
+          return Number.isFinite(n) ? n : -Infinity;
+        };
+
+        // Pick the row with the highest save timestamp; tie-break by later index
+        let bestIdx = 0;
+        let bestTs  = getSaveTs(rows[0]);
+        for (let i = 1; i < rows.length; i++) {
+          const t = getSaveTs(rows[i]);
+          if (t > bestTs || (t === bestTs && i > bestIdx)) {
+            bestTs = t;
+            bestIdx = i;
           }
-        }).catch(()=>setLatest(null))
-      })
-  },[])
+        }
 
-  if(!latest) return null
+        setLatest(rows[bestIdx]);
+      } catch {
+        setLatest(null);
+      }
+    })();
+  }, []);
 
-  const doj = latest.dojReportNumber || 'N/A'
-  const by  = latest.loggedBy || latest.by || 'Unknown'
-  const when = fmtDateTimeEST(latest.createdAt || latest.date) + ' EST'
+  if (!latest) return null;
+
+  const doj = latest.dojReportNumber || 'N/A';
+  const by  = latest.loggedBy || latest.by || 'Unknown';
+
+  // Prefer saved/created timestamps; if absent, show the case date as DATE-ONLY
+  const addedISO =
+    latest.savedAt ??
+    latest.createdAt ??
+    latest.updatedAt ??
+    latest._created ??
+    latest._ts ??
+    null;
+
+  const when = addedISO
+    ? fmtDateTimeEST(addedISO) + ' EST'
+    : fmtDateUS(latest.date); // date-only fallback (no 8pm artifact)
 
   return (
     <div className="card" style={{marginTop:16}}>
@@ -341,10 +400,11 @@ function LastLogged(){
       <p><b>Added By:</b> {by}</p>
       <p><b>Date Added:</b> {when}</p>
     </div>
-  )
+  );
 }
 
-// ======== ANALYTICS ========
+
+/* ========== ANALYTICS ========== */
 function Analytics(){
   const [staff,setStaff]=useState([]); const staffMap=useMemo(()=>Object.fromEntries(staff.map(s=>[String(s.id),s])),[staff])
   const [from,setFrom]=useState(daysAgoYMD(30)),[to,setTo]=useState(todayYMD())
@@ -432,13 +492,14 @@ function Analytics(){
           <option value="">All</option><option value="HUT">HUT</option><option value="CRIMINAL">CRIMINAL</option>
         </select></label>
     </Row>
-<div className="row" style={{marginTop:12}}>
-  <div className="card"><h3>Total Records</h3><p style={{fontSize:28,margin:0}}>{kpi.total}</p></div>
-  <div className="card"><h3>Charges Removed</h3><p style={{fontSize:28,margin:0}}>{kpi.chargesRemoved}</p></div>
-  <div className="card"><h3>Cell Calls Supervised</h3><p style={{fontSize:28,margin:0}}>{kpi.supervisionCount}</p></div>
-  <div className="card"><h3>Total Fine</h3><p style={{fontSize:28,margin:0}}>${kpi.totalFine}</p></div>
-  <div className="card"><h3>Total Sentence (months)</h3><p style={{fontSize:28,margin:0}}>{kpi.totalMonths}</p></div>
-</div>
+
+    <div className="row" style={{marginTop:12}}>
+      <div className="card"><h3>Total Records</h3><p style={{fontSize:28,margin:0}}>{kpi.total}</p></div>
+      <div className="card"><h3>Charges Removed</h3><p style={{fontSize:28,margin:0}}>{kpi.chargesRemoved}</p></div>
+      <div className="card"><h3>Cell Calls Supervised</h3><p style={{fontSize:28,margin:0}}>{kpi.supervisionCount}</p></div>
+      <div className="card"><h3>Total Fine</h3><p style={{fontSize:28,margin:0}}>${kpi.totalFine}</p></div>
+      <div className="card"><h3>Total Sentence (months)</h3><p style={{fontSize:28,margin:0}}>{kpi.totalMonths}</p></div>
+    </div>
 
     <div className="row" style={{marginTop:12}}>
       <button className="btn" onClick={load}>Apply Filters</button>
@@ -473,20 +534,10 @@ function Analytics(){
                   <td>{r.incidentType}</td>
                   <td>
                     <button
-                      onClick={() => {
-                        if(window.confirm('Delete this record?')) deleteRecord(r.id)
-                      }}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'var(--text-light)',
-                        cursor: 'pointer',
-                        fontSize: '1.2em'
-                      }}
+                      onClick={() => { if(window.confirm('Delete this record?')) deleteRecord(r.id) }}
+                      style={{ background:'transparent', border:'none', color:'var(--text-light)', cursor:'pointer', fontSize:'1.2em' }}
                       title="Delete record"
-                    >
-                      🗑️
-                    </button>
+                    >🗑️</button>
                   </td>
                 </tr>
               ))}
@@ -499,7 +550,7 @@ function Analytics(){
   </div>)
 }
 
-// ======== APP SHELL ========
+/* ========== APP SHELL ========== */
 export default function App(){
   const [view,setView]=useState('landing')
   const [status,setStatus]=useState('Checking API...')
@@ -524,7 +575,7 @@ export default function App(){
 
     {view==='landing' && (
       <div style={{display:'flex',flexDirection:'column',gap:16,marginTop:16}}>
-        <div style={{display:'flex',gap:16}}>
+        <div className="home-options" style={{display:'flex',gap:16}}>
           <div className="card" style={{flex:1,textAlign:'center',cursor:'pointer'}} onClick={()=>setView('form')}>
             <h2>Report Cell Call</h2>
             <p>Create a new record.</p>
