@@ -445,7 +445,7 @@ function Analytics(){
 
   async function deleteRecord(id){
     if(!window.confirm('Delete this record?'))return
-    await fetch(`${API}/records/${id}`,{method:'DELETE'})
+    await fetch(`${API}/records/${encodeURIComponent(id)}`, { method:'DELETE' })
     await load()
   }
 
