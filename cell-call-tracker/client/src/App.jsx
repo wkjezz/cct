@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 
-const API = 'https://cct-sigma.vercel.app/api'
+const API = import.meta.env.VITE_API_BASE || '/api';
+
 
 /* ========== Utilities ========== */
 function Label({children}){ return <div className="label">{children}</div> }
