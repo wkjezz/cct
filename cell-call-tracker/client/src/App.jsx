@@ -171,13 +171,13 @@ function Form({ onSaved }){
 
       if (existing) {
         const ok = window.confirm(
-          `Cell Call for Report ${form.dojReportNumber} has already been submitted, do you wish to overwrite it?`
+        `Cell Call for Report ${form.dojReportNumber} has already been submitted, do you wish to overwrite it?`
         );
         if (!ok) { setSaving(false); setMsg('Canceled.'); return; }
 
         // Try PUT (id in query string for our single route setup)
         let data = await getJSON(
-          `${API}/records?id=${encodeURIComponent(existing.id)}`,
+        `${API}/records?id=${encodeURIComponent(existing.id.split(':')[0])}`,
           {
             method: 'PUT',
             headers: { 'Content-Type':'application/json' },
@@ -187,7 +187,7 @@ function Form({ onSaved }){
 
         // If PUT not supported, fall back to DELETE + POST
         if (!data) {
-          await fetch(`${API}/records?id=${encodeURIComponent(existing.id)}`, { method:'DELETE' });
+        await fetch(`${API}/records?id=${encodeURIComponent(existing.id.split(':')[0])}`, { method:'DELETE' });
           data = await getJSON(`${API}/records`, {
             method: 'POST',
             headers: { 'Content-Type':'application/json' },
@@ -446,7 +446,8 @@ function Analytics(){
 
   async function deleteRecord(id){
     if(!window.confirm('Delete this record?'))return;
-    await fetch(`${API}/records?id=${encodeURIComponent(id)}`, { method:'DELETE' });
+  const delId = String(id).split(':')[0];
+  await fetch(`${API}/records?id=${encodeURIComponent(delId)}`, { method:'DELETE' });
     await load();
   }
 
