@@ -1,3 +1,6 @@
+/* =========================================================
+   Theme & Base
+   ========================================================= */
 :root{
   --bg:#0b1736;           /* page background (navy) */
   --card:#13244b;         /* card background (deep blue) */
@@ -6,88 +9,203 @@
   --text-light:#d9c36b;   /* darker golden tone for headings and nav */
   --muted:#b9ad77;        /* muted text */
   --border:#2d3e6f;       /* borders */
-  --divider: rgba(173,216,230,0.10); /* subtle light-blue divider */
+  --divider: rgba(173,216,230,0.12); /* subtle light-blue divider */
+  --input-bg:#0e1d44;     /* inputs */
+  --focus:#ffe27a;        /* focus ring (soft gold) */
 }
 
-*{box-sizing:border-box}
-html,body{height:100%}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
 
 body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:"Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  margin: 0;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  position: relative;         /* create stacking context for watermark */
+  overflow-x: hidden;
 }
 
-/* Typography */
-h1,h2,h3,h4,h5,h6{ color:var(--text-light); margin:0 0 .5rem }
-p,span,small,li,div{ color:var(--text); }
-small,.muted{ color:var(--muted); }
-a{ color:var(--text-light); text-decoration:underline }
+/* Keep app content above the watermark layer */
+#root { position: relative; z-index: 1; }
 
-/* Layout */
+/* DOJ seal watermark (does not affect DOM or content) */
+body::before{
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url('https://i.ibb.co/Q38P9hfJ/DOJSeal.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: min(70vmin, 1100px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.08;            /* translucency */
+  filter: grayscale(100%);  /* monochrome */
+}
+
+/* =========================================================
+   Typography
+   ========================================================= */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-light);
+  margin: 0 0 .5rem;
+}
+p, span, small, li, div { color: var(--text); }
+small, .muted { color: var(--muted); }
+a { color: var(--text-light); text-decoration: underline; }
+a:hover { text-decoration: none; }
+
+/* =========================================================
+   Cards, Layout & Dividers
+   ========================================================= */
 .card{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:16px;
-  box-shadow:0 2px 8px rgba(0,0,0,.25);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
 }
-header.card{
-  background:var(--accent);
-  border-color:var(--border);
-  color:var(--text-light);
-}
-.row{ display:grid; grid-template-columns:1fr 1fr; gap:12px }
 
-/* subtle section divider used to separate groups inside cards/forms */
+/* Header uses accent */
+header.card{
+  background: var(--accent);
+  border-color: var(--border);
+  color: var(--text-light);
+}
+
+/* Two-column grid rows inside forms/sections */
+.row{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 900px){
+  .row { grid-template-columns: 1fr; }
+}
+
+/* Subtle section divider spanning card edges */
 .section-sep{
-  /* Subtle but more visible separator: extends to card edges */
-  height:8px;
-  border-radius:6px;
-  margin:12px -16px; /* reach card padding edges (card padding is 16px) */
-  background: linear-gradient(90deg, rgba(173,216,230,0.18), rgba(173,216,230,0.06));
+  height: 8px;
+  border-radius: 6px;
+  margin: 12px -16px; /* reach the card edges; card has 16px padding */
+  background: linear-gradient(90deg,
+              rgba(173,216,230,0.18),
+              rgba(173,216,230,0.06));
   box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset;
 }
 
-/* Buttons */
+/* =========================================================
+   Home Page – hover only for the big option cards
+   ========================================================= */
+.home-options .card{
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.home-options .card:hover{
+  transform: translateY(-4px);
+  box-shadow: 0 0 16px rgba(255,215,0,0.22); /* soft golden glow */
+}
+
+/* =========================================================
+   Buttons
+   ========================================================= */
 .btn{
-  border-radius:12px;
-  padding:10px 14px;
-  border:1px solid var(--border);
-  background:var(--accent);
-  color:var(--text-light);
-  cursor:pointer;
-  font-weight:600;
+  border-radius: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  background: var(--accent);
+  color: var(--text-light);
+  cursor: pointer;
+  font-weight: 600;
+  transition: background .15s ease, transform .05s ease;
 }
-.btn:hover{ background:#314d91 }
+.btn:hover { background: #314d91; }
+.btn:active { transform: translateY(1px); }
 .btn.primary{
-  background:var(--text);
-  color:var(--bg);
+  background: var(--text);
+  color: var(--bg);
+}
+.btn[disabled]{
+  opacity: .6;
+  cursor: not-allowed;
 }
 
-/* Forms */
-label.field{ display:block }
-.label{ font-size:12px; color:var(--muted); margin:6px 0 }
-input,select,textarea{
-  width:100%; padding:10px;
-  border-radius:12px; border:1px solid var(--border);
-  background:#0e1d44; color:var(--text-light);
+/* =========================================================
+   Forms
+   ========================================================= */
+label.field { display: block; }
+.label{
+  font-size: 12px;
+  color: var(--muted);
+  margin: 6px 0;
 }
-input::placeholder, textarea::placeholder{ color:var(--muted) }
 
-/* Tables */
-table{ width:100%; border-collapse:collapse }
-th,td{ padding:10px; border-top:1px solid var(--border); font-size:14px; color:var(--text) }
-th{ background:#0f214c; color:var(--text-light) }
+input, select, textarea{
+  width: 100%;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text-light);
+  outline: none;
+}
+input::placeholder, textarea::placeholder{ color: var(--muted); }
 
-/* Pills */
+/* Better focus-visible for accessibility */
+:where(input, select, textarea, .btn):focus-visible{
+  box-shadow: 0 0 0 3px rgba(255, 226, 122, 0.25);
+  border-color: var(--focus);
+}
+
+/* Pills (chips) */
 .pill{
-  display:inline-block;
-  background:#1b2f61;
-  border:1px solid var(--border);
-  border-radius:999px;
-  padding:2px 8px;
-  font-size:12px;
-  color:var(--text-light);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #1b2f61;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+/* =========================================================
+   Tables
+   ========================================================= */
+table{ width: 100%; border-collapse: collapse; }
+th, td{
+  padding: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--text);
+}
+th{
+  background: #0f214c;
+  color: var(--text-light);
+  text-align: left;
+}
+tbody tr:hover{
+  background: rgba(255,255,255,0.02);
+}
+
+/* =========================================================
+   Utilities
+   ========================================================= */
+.hide { display: none !important; }
+.center { text-align: center; }
+
+/* Soft custom scrollbar (WebKit/Chromium) */
+::-webkit-scrollbar { height: 10px; width: 10px; }
+::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.12);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
+
+/* Respect reduced-motion */
+@media (prefers-reduced-motion: reduce){
+  .home-options .card,
+  .btn { transition: none !important; }
 }

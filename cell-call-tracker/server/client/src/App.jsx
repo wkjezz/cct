@@ -5,6 +5,7 @@ const API = '/api'
 // ===== Utility helpers =====
 function Label({children}){ return <div className="label">{children}</div> }
 function Row({children}){ return <div className="row">{children}</div> }
+function Divider(){ return <div className="section-sep" /> }
 function toLocalMidnightISO(ymd){ const [y,m,d]=ymd.split('-').map(Number); return new Date(y,m-1,d,0,0,0,0).toISOString() }
 function todayYMD(){ return new Date().toISOString().slice(0,10) }
 function daysAgoYMD(n){ const t=new Date(); t.setDate(t.getDate()-n); return t.toISOString().slice(0,10) }
@@ -37,11 +38,15 @@ function AddSelect({label, options, selectedIds, onAdd, onRemove}){
           <option value="">Select…</option>
           {left.map(o => <option key={o.id} value={o.id}>{o.name}{o.role?` (${o.role})`:''}</option>)}
         </select>
-        <button type="button" className="btn" onClick={()=>{
-          if(!pick) return
-          onAdd(pick)
-          setPick('')
-        }}>Add</button>
+        <button
+          type="button"
+          className="btn"
+          onClick={()=>{
+            if(!pick) return
+            onAdd(pick)
+            setPick('')
+          }}
+        >Add</button>
       </div>
       <ChipList
         items={selectedIds}
@@ -64,9 +69,9 @@ function Form({ onSaved }){
 
   // Supervising list: exclude Paralegal/Junior + add Judiciary
   const supervisingOpts = useMemo(() => {
-    const allowed = staff.filter(s =>
-      !/paralegal/i.test(s.role) && !/junior/i.test(s.role)
-    ).map(s => ({ id:String(s.id), name:s.name, role:s.role }))
+    const allowed = staff
+      .filter(s => !/paralegal/i.test(s.role) && !/junior/i.test(s.role))
+      .map(s => ({ id:String(s.id), name:s.name, role:s.role }))
     allowed.push({ id:'judiciary', name:'Judiciary', role:'Court Oversight' })
     return allowed
   }, [staff])
@@ -104,52 +109,122 @@ function Form({ onSaved }){
     if(form.verdict==='BENCH_REQUEST'&&!form.benchVerdictNumber) return 'Verdict # required'
     return ''
   }
+async function findByDOJ(doj) {
+  const norm = v => String(v ?? '').trim();
+  const wanted = norm(doj);
+  if (!wanted) return null;
 
+  // Always fetch all and do an exact match client-side.
+  const res = await fetch(`${API}/records`);
+  if (!res.ok) return null;
+  const all = await res.json();
+  if (!Array.isArray(all)) return null;
+
+  return all.find(r => norm(r.dojReportNumber) === wanted) || null;
+}
   async function submit(e){
-    e.preventDefault()
-    const err=validate(); if(err){setMsg(err);return}
-    setMsg(''); setSaving(true)
-    const payload={
-      date:toLocalMidnightISO(form.date),
-      incidentId:form.incidentId,
-      dojReportNumber:form.dojReportNumber,
-      leadingId:Number(form.leadingId),
+    e.preventDefault();
+
+    const err = validate();
+    if (err) { setMsg(err); return; }
+
+    setMsg('');
+    setSaving(true);
+
+    const payload = {
+      date: toLocalMidnightISO(form.date),
+      incidentId: form.incidentId,
+      dojReportNumber: form.dojReportNumber,
+      leadingId: Number(form.leadingId),
       supervising: form.supervising.map(id => id === 'judiciary' ? 'judiciary' : Number(id)),
-      attorneyObservers:form.attorneyObservers.map(Number),
-      paralegalObservers:form.paralegalObservers.map(Number),
-      verdict:form.verdict,
-      benchVerdictNumber:form.verdict==='BENCH_REQUEST'?form.benchVerdictNumber:null,
-      chargesRemoved:form.chargesRemoved==='yes',
-      chargesReplaced:form.chargesRemoved==='yes'&&form.chargesReplaced==='yes',
-      fine:form.fine===''?null:Number(form.fine),
-      sentenceMonths:form.sentenceMonths===''?null:Number(form.sentenceMonths),
-      cellCallType:form.cellCallType,
-      incidentType:form.incidentType,
-      notes:form.notes,
-      by:form.by
+      attorneyObservers: form.attorneyObservers.map(Number),
+      paralegalObservers: form.paralegalObservers.map(Number),
+      verdict: form.verdict,
+      benchVerdictNumber: form.verdict==='BENCH_REQUEST' ? form.benchVerdictNumber : null,
+      chargesRemoved: form.chargesRemoved === 'yes',
+      chargesReplaced: form.chargesRemoved === 'yes' && form.chargesReplaced === 'yes',
+      fine: form.fine === '' ? null : Number(form.fine),
+      sentenceMonths: form.sentenceMonths === '' ? null : Number(form.sentenceMonths),
+      cellCallType: form.cellCallType,
+      incidentType: form.incidentType,
+      notes: form.notes,
+      by: form.by
+    };
+
+    try {
+      // 1) Check for duplicate DOJ #
+      const existing = await findByDOJ(form.dojReportNumber);
+
+      if (existing) {
+        const ok = window.confirm(`Cell Call for Report ${form.dojReportNumber} has already been submitted, do you wish to overwrite it?`);
+        if (!ok) { setSaving(false); setMsg('Canceled.'); return; }
+
+        // Try PUT first (preferred)
+        let r = await fetch(`${API}/records/${existing.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        // If PUT not supported, fall back to DELETE + POST
+        if (!r.ok) {
+          await fetch(`${API}/records/${existing.id}`, { method:'DELETE' });
+          r = await fetch(`${API}/records`, {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+
+        const data = await r.json();
+        setSaving(false);
+        if (data.error) { setMsg(data.error); return; }
+        setMsg(`Entry for report ${form.dojReportNumber} save`);
+        onSaved?.(data);
+        hardClear();
+        return;
+      }
+
+      // 2) No duplicate → normal create
+      const r = await fetch(`${API}/records`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await r.json();
+      setSaving(false);
+      if (data.error) { setMsg(data.error); return; }
+      setMsg(`Entry for report ${form.dojReportNumber} save`);
+      onSaved?.(data);
+      hardClear();
+
+    } catch (e) {
+      console.error(e);
+      setSaving(false);
+      setMsg('Network error while saving.');
     }
-    const r=await fetch(`${API}/records`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
-    const data=await r.json(); setSaving(false)
-    if(data.error){setMsg(data.error);return}
-    setMsg('Saved ✓'); onSaved?.(data); hardClear()
   }
 
   return (
   <form className="card" onSubmit={submit} style={{marginTop:16}}>
     <h2>Report Cell Call</h2>
+
     <Row>
       <label className="field"><Label>Date</Label><input type="date" value={form.date} onChange={e=>upd('date',e.target.value)} /></label>
-      <label className="field"><Label>Incident ID (6 chars)</Label><input value={form.incidentId} onChange={e=>upd('incidentId',six(e.target.value))} maxLength={6}/></label>
-    </Row>
-    <Row>
-      <label className="field"><Label>DOJ Report # (6 chars)</Label><input value={form.dojReportNumber} onChange={e=>upd('dojReportNumber',six(e.target.value))} maxLength={6}/></label>
-      <label className="field"><Label>Attorney Leading</Label>
-        <select value={form.leadingId} onChange={e=>upd('leadingId',e.target.value)}>
-          <option value="">Select…</option>{staffOpts.map(s=><option key={s.id} value={s.id}>{s.name}{s.role?` (${s.role})`:''}</option>)}
-        </select></label>
     </Row>
 
     <Row>
+      <label className="field"><Label>DOJ Report # (6 chars)</Label><input value={form.dojReportNumber} onChange={e=>upd('dojReportNumber',six(e.target.value))} maxLength={6}/></label>
+      <label className="field"><Label>Incident ID (6 chars)</Label><input value={form.incidentId} onChange={e=>upd('incidentId',six(e.target.value))} maxLength={6}/></label>
+    </Row>
+
+    <Divider />
+
+    <Row>
+            <label className="field"><Label>Attorney Leading</Label>
+        <select value={form.leadingId} onChange={e=>upd('leadingId',e.target.value)}>
+          <option value="">Select…</option>{staffOpts.map(s=><option key={s.id} value={s.id}>{s.name}{s.role?` (${s.role})`:''}</option>)}
+        </select></label>
       <AddSelect key={`sup-${formKey}`} label="Attorney Supervising" options={supervisingOpts}
         selectedIds={form.supervising} onAdd={id=>upd('supervising',[...new Set([...form.supervising,String(id)])])}
         onRemove={id=>upd('supervising',form.supervising.filter(x=>x!==String(id)))}/>
@@ -163,26 +238,38 @@ function Form({ onSaved }){
         selectedIds={form.paralegalObservers} onAdd={id=>upd('paralegalObservers',[...new Set([...form.paralegalObservers,String(id)])])}
         onRemove={id=>upd('paralegalObservers',form.paralegalObservers.filter(x=>x!==String(id)))}/>
     </Row>
-    {/* Cell Call Type */}
+
+    <Divider />
+
+    {/* Cell Call Type + Incident Type */}
     <Row>
       <label className="field">
         <Label>Cell Call Type</Label>
-        <select
-          value={form.cellCallType}
-          onChange={(e) => upd('cellCallType', e.target.value)}
-        >
+        <select value={form.cellCallType} onChange={(e) => upd('cellCallType', e.target.value)}>
           <option value="CELL_CALL">Cell Call</option>
           <option value="WARRANT_ARREST">Warrant Arrest</option>
           <option value="SENTENCING_HEARING">Sentencing Hearing</option>
         </select>
       </label>
+
+      <label className="field">
+        <Label>Incident Type</Label>
+        <select value={form.incidentType} onChange={(e)=>upd('incidentType', e.target.value)}>
+          <option value="HUT">HUT</option>
+          <option value="CRIMINAL">CRIMINAL</option>
+        </select>
+      </label>
     </Row>
+
+    <Divider />
 
     <Row>
       <label className="field"><Label>Verdict</Label>
         <select value={form.verdict} onChange={e=>upd('verdict',e.target.value)}>
-          <option value="GUILTY">Guilty</option><option value="NOT_GUILTY">Not Guilty</option>
-          <option value="NO_CONTEST">No Contest</option><option value="BENCH_REQUEST">Bench Request</option>
+          <option value="GUILTY">Guilty</option>
+          <option value="NOT_GUILTY">Not Guilty</option>
+          <option value="NO_CONTEST">No Contest</option>
+          <option value="BENCH_REQUEST">Bench Request</option>
         </select></label>
       {form.verdict==='BENCH_REQUEST'&&(
         <label className="field"><Label>Verdict Number</Label><input value={form.benchVerdictNumber} onChange={e=>upd('benchVerdictNumber',e.target.value)}/></label>
@@ -192,11 +279,13 @@ function Form({ onSaved }){
     <Row>
       <label className="field"><Label>Charges Removed?</Label>
         <select value={form.chargesRemoved} onChange={e=>upd('chargesRemoved',e.target.value)}>
-          <option value="no">No</option><option value="yes">Yes</option></select></label>
+          <option value="no">No</option><option value="yes">Yes</option>
+        </select></label>
       {form.chargesRemoved==='yes'&&(
         <label className="field"><Label>Charges Replaced?</Label>
           <select value={form.chargesReplaced} onChange={e=>upd('chargesReplaced',e.target.value)}>
-            <option value="no">No</option><option value="yes">Yes</option></select></label>
+            <option value="no">No</option><option value="yes">Yes</option>
+          </select></label>
       )}
     </Row>
 
@@ -222,20 +311,28 @@ function LastLogged(){
   const [latest,setLatest]=useState(null)
 
   useEffect(()=>{
-    fetch(`${API}/records`).then(r=>r.json()).then(rows=>{
-      if(Array.isArray(rows) && rows.length){
-        // newest by date
-        const rec = rows.slice().sort((a,b)=>new Date(b.date)-new Date(a.date))[0]
-        setLatest(rec)
-      }
-    }).catch(()=>setLatest(null))
+    // Prefer a dedicated endpoint if you have it
+    fetch(`${API}/last`).then(r=>r.ok?r.json():Promise.reject())
+      .then(setLatest)
+      .catch(()=> {
+        // Fallback: pull all and choose newest by createdAt or date
+        fetch(`${API}/records`).then(r=>r.json()).then(rows=>{
+          if(Array.isArray(rows) && rows.length){
+            const rec = rows.slice().sort((a,b)=>{
+              const ax = new Date(b.createdAt||b.date) - new Date(a.createdAt||a.date)
+              return ax
+            })[0]
+            setLatest(rec)
+          }
+        }).catch(()=>setLatest(null))
+      })
   },[])
 
   if(!latest) return null
 
   const doj = latest.dojReportNumber || 'N/A'
   const by  = latest.loggedBy || latest.by || 'Unknown'
-  const when = fmtDateTimeEST(latest.date) + ' EST'
+  const when = fmtDateTimeEST(latest.createdAt || latest.date) + ' EST'
 
   return (
     <div className="card" style={{marginTop:16}}>
@@ -261,7 +358,7 @@ function Analytics(){
     const qs=new URLSearchParams()
     if(from)qs.set('from',toLocalMidnightISO(from))
     if(to){const end=new Date(to);end.setDate(end.getDate()+1);qs.set('to',end.toISOString())}
-    if(staffId)qs.set('staffId',staffId)        // server filters LEADING only
+    if(staffId)qs.set('staffId',staffId)        // server should filter LEADING only
     if(cellCallType)qs.set('cellCallType',cellCallType)
     if(incidentType)qs.set('incidentType',incidentType)
     const res=await fetch(`${API}/records?`+qs.toString())
@@ -273,7 +370,7 @@ function Analytics(){
   const kpi=useMemo(()=>{
     const total=rows.length
     const chargesRemoved=rows.filter(r=>r.chargesRemoved).length
-    const chargesReplaced=rows.filter(r=>r.chargesReplaced).length
+    const chargesReplaced=rows.filter(r=>r.chargesRemoved && r.chargesReplaced).length
     const bench=rows.filter(r=>r.verdict==='BENCH_REQUEST').length
     const totalFine=rows.reduce((s,r)=>s+(Number(r.fine)||0),0)
     const totalMonths=rows.reduce((s,r)=>s+(Number(r.sentenceMonths)||0),0)
@@ -307,7 +404,7 @@ function Analytics(){
     lines.push(`| Date | Incident | DOJ# | Lead | Verdict | Fine | Sentence | Type |`)
     lines.push(`|------|-----------|------|------|----------|------|-----------|------|`)
     for(const r of rows){
-      lines.push(`| ${fmtDateUS(r.date)} | ${r.incidentId} | ${r.dojReportNumber} | ${staffMap[String(r.leadingId)]?.name||r.leadingId} | ${r.verdict} | ${r.fine??'-'} | ${r.sentenceMonths??'-'} | ${r.cellCallType} |`)
+      lines.push(`| ${fmtDateUS(r.createdAt||r.date)} | ${r.incidentId} | ${r.dojReportNumber} | ${staffMap[String(r.leadingId)]?.name||r.leadingId} | ${r.verdict} | ${r.fine??'-'} | ${r.sentenceMonths??'-'} | ${r.cellCallType} |`)
     }
     await navigator.clipboard.writeText(lines.join('\n'))
     setCopied(true); setTimeout(()=>setCopied(false),2000)
@@ -335,11 +432,13 @@ function Analytics(){
           <option value="">All</option><option value="HUT">HUT</option><option value="CRIMINAL">CRIMINAL</option>
         </select></label>
     </Row>
-    <div className="row" style={{marginTop:12}}>
-      <div className="card"><h3>Total Records</h3><p style={{fontSize:28,margin:0}}>{kpi.total}</p></div>
-      <div className="card"><h3>Charges Removed</h3><p style={{fontSize:28,margin:0}}>{kpi.chargesRemoved}</p></div>
-      <div className="card"><h3>Cell Calls Supervised</h3><p style={{fontSize:28,margin:0}}>{kpi.supervisionCount}</p></div>
-    </div>
+<div className="row" style={{marginTop:12}}>
+  <div className="card"><h3>Total Records</h3><p style={{fontSize:28,margin:0}}>{kpi.total}</p></div>
+  <div className="card"><h3>Charges Removed</h3><p style={{fontSize:28,margin:0}}>{kpi.chargesRemoved}</p></div>
+  <div className="card"><h3>Cell Calls Supervised</h3><p style={{fontSize:28,margin:0}}>{kpi.supervisionCount}</p></div>
+  <div className="card"><h3>Total Fine</h3><p style={{fontSize:28,margin:0}}>${kpi.totalFine}</p></div>
+  <div className="card"><h3>Total Sentence (months)</h3><p style={{fontSize:28,margin:0}}>{kpi.totalMonths}</p></div>
+</div>
 
     <div className="row" style={{marginTop:12}}>
       <button className="btn" onClick={load}>Apply Filters</button>
@@ -361,7 +460,7 @@ function Analytics(){
             <tbody>
               {rows.map(r=>(
                 <tr key={r.id}>
-                  <td>{fmtDateUS(r.date)}</td>
+                  <td>{fmtDateUS(r.createdAt||r.date)}</td>
                   <td>{r.incidentId}</td>
                   <td>{r.dojReportNumber}</td>
                   <td>{staffMap[String(r.leadingId)]?.name || r.leadingId}</td>
