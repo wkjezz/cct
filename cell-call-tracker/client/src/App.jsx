@@ -28,9 +28,6 @@ export default function App(){
   const [staffCount,setStaffCount]=useState(0);
   const [user,setUser]=useState(null);
   const [checkedAuth,setCheckedAuth]=useState(false);
-  const [forceNonAdmin, setForceNonAdmin] = useState(() => {
-    try { return Boolean(typeof window !== 'undefined' && localStorage.getItem('dev_force_non_admin') === '1') } catch { return false }
-  });
 
   useEffect(()=>{
     (async () => {
@@ -63,8 +60,8 @@ export default function App(){
 
   if (!checkedAuth) return null; // hide everything until auth resolved
 
-  // effectiveUser mirrors user but allows a dev-only client-side override to simulate non-admins
-  const effectiveUser = user ? { ...user, admin: !!user.admin && !forceNonAdmin } : null;
+  // effectiveUser is the server-determined user (no local dev override)
+  const effectiveUser = user || null;
 
   return (
   <div style={{maxWidth:1100,margin:'24px auto'}}>
@@ -102,20 +99,7 @@ export default function App(){
             {typeof window !== 'undefined' && localStorage.getItem(`rpName_${user.id}`) && (
               <span style={{fontSize:12,opacity:.95}}>{localStorage.getItem(`rpName_${user.id}`)}</span>
             )}
-            {/* Dev-only toggle: let admin simulate non-admin view locally */}
-            {user.admin && (
-              <button
-                className="btn"
-                style={{fontSize:11,padding:'4px 8px'}}
-                onClick={() => {
-                  try {
-                    const next = !forceNonAdmin;
-                    setForceNonAdmin(next);
-                    if (next) localStorage.setItem('dev_force_non_admin', '1'); else localStorage.removeItem('dev_force_non_admin');
-                  } catch (e) {}
-                }}
-              >{forceNonAdmin ? 'Dev: view as admin' : 'Dev: view as non-admin'}</button>
-            )}
+            {/* (removed) Dev-only toggle previously allowed local simulation of non-admin; server-side role is authoritative */}
           </div>
         )}
       </div>
@@ -124,7 +108,7 @@ export default function App(){
     {view==='landing' && (
       <div style={{display:'flex',flexDirection:'column',gap:16,marginTop:16}}>
         <div className="home-options" style={{display:'flex',gap:16}}>
-          <div className="card" style={{flex:1,textAlign:'center',cursor:user?.admin ? 'pointer' : 'default',opacity:user?.admin?1:0.6}} onClick={()=>user?.admin && setView('form')}>
+          <div className="card" style={{flex:1,textAlign:'center',cursor:effectiveUser?.admin ? 'pointer' : 'default',opacity:effectiveUser?.admin?1:0.6}} onClick={()=>effectiveUser?.admin && setView('form')}>
             <h2>Report Cell Call</h2>
             <p>Create a new record.</p>
           </div>
@@ -142,8 +126,8 @@ export default function App(){
       </div>
     )}
 
-  {view==='form' && <Form user={user} onSaved={()=>console.log('saved')} />}
-  {view==='analytics' && <Analytics user={user} />}
+  {view==='form' && <Form user={effectiveUser} onSaved={()=>console.log('saved')} />}
+  {view==='analytics' && <Analytics user={effectiveUser} />}
     {view==='performance' && <Performance />}
   </div>);
 }
