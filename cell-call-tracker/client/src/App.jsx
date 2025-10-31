@@ -74,6 +74,11 @@ export default function App(){
         )}
         <button className="btn" onClick={()=>setView('analytics')}>Analytics</button>
         <button className="btn" onClick={()=>setView('performance')}>Performance</button>
+        {/* visual separator before Smart Report */}
+        {effectiveUser?.admin && <span style={{alignSelf:'center',opacity:0.6,marginLeft:6,marginRight:6}}>·</span>}
+        {effectiveUser?.admin && (
+          <button className="btn" onClick={()=>setView('smart')} title="Smart Report (BETA)">💎 Smart Report (BETA)</button>
+        )}
       </nav>
       <div style={{display:'flex',alignItems:'center',gap:12}}>
         {/* show admin display name only when effective user is admin */}
@@ -121,6 +126,12 @@ export default function App(){
               <p>Create a new record.</p>
             </div>
           )}
+          {effectiveUser?.admin && (
+            <div className="card" style={{flex:1,textAlign:'center',cursor:'pointer'}} onClick={()=>setView('smart')}>
+              <h2>💎 Smart Report</h2>
+              <p style={{fontSize:13,opacity:0.9}}>AI-assisted extraction (BETA). Auto-filled fields must be manually verified before submission.</p>
+            </div>
+          )}
           <div className="card" style={{flex:1,textAlign:'center',cursor:'pointer'}} onClick={()=>setView('analytics')}>
             <h2>Analytics</h2>
             <p>View counts and filters.</p>
@@ -138,5 +149,16 @@ export default function App(){
   {view==='form' && <Form user={effectiveUser} onSaved={()=>console.log('saved')} />}
   {view==='analytics' && <Analytics user={effectiveUser} />}
     {view==='performance' && <Performance />}
+    {view==='smart' && (
+      <div className="card" style={{marginTop:16}}>
+      <h2 style={{display:'flex',alignItems:'center',gap:8}}><span>💎</span> Smart Report <small style={{fontSize:12,opacity:0.7}}>(BETA)</small></h2>
+      <p style={{color:'var(--text-light)'}}>
+        AI can make mistakes — manually check the extracted data before submitting. This feature is editor-only.
+      </p>
+      <div style={{marginTop:12}}>
+        <p style={{margin:0}}>Upload an MDT screenshot to auto-fill fields. The app will highlight detected fields; confirm or correct them before saving.</p>
+      </div>
+      </div>
+    )}
   </div>);
 }
