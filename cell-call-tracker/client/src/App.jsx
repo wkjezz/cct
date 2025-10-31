@@ -1,4 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { Pie } from 'react-chartjs-2'
+import { Chart as ChartJS, ArcElement, Tooltip, Legend as ChartLegend } from 'chart.js'
+ChartJS.register(ArcElement, Tooltip, ChartLegend)
 
 const API = import.meta.env.VITE_API_BASE || '/api';
 
@@ -25,6 +28,35 @@ async function getJSON(url, options) {
   } catch {
     return null;
   }
+}
+
+/* Small PieChart wrapper using react-chartjs-2 */
+function PieChart({ data }){
+  const labels = data.map(d=>d.name);
+  const values = data.map(d=>d.value || 0);
+  const bg = data.map(d=>d.color || '#777');
+  const chartData = { labels, datasets: [{ data: values, backgroundColor: bg, borderColor: '#fff', borderWidth: 1 }] };
+  const options = {
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => {
+            const v = ctx.raw ?? 0;
+            const total = values.reduce((s,n)=>s+(Number(n)||0),0) || 1;
+            const pct = Math.round((v/total)*1000)/10;
+            return `${ctx.label}: ${v} (${pct}%)`;
+          }
+        }
+      }
+    }
+  };
+  return (
+    <div style={{width:'100%', height:240}}>
+      <Pie data={chartData} options={options} />
+    </div>
+  );
 }
 
 /* ========== Chips (selected people) ========== */
@@ -684,16 +716,8 @@ function Performance(){
 
   const pieData = useMemo(()=>{
     const list = table.map(t=>({ id:t.id, name:t.name, role: t.role, value: t.lead + t.supervised }));
-    const total = list.reduce((s,i)=>s+i.value,0) || 0;
-    let angle = 0;
     const colors = ['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc948','#b07aa1','#ff9da7','#9c755f','#bab0ac'];
-    return list.map((it,idx)=>{
-      const portion = total? (it.value/total) : 0;
-      const start = angle;
-      const end = angle + portion*360;
-      angle = end;
-      return { ...it, portion, startAngle:start, endAngle:end, color: colors[idx % colors.length] };
-    });
+    return list.map((it,idx)=>({ ...it, color: colors[idx % colors.length] }));
   },[table]);
 
   return (
@@ -735,18 +759,12 @@ function Performance(){
 
         <div className="card" style={{width:'100%'}}>
           <h3>Call Call Distribution</h3>
-          <div style={{display:'flex',gap:8,alignItems:'flex-start',flexWrap:'wrap'}}>
-            <svg width={240} height={240} viewBox="0 0 320 320">
-              {pieData.length===0 && (
-                <g><text x="160" y="160" textAnchor="middle" dominantBaseline="middle">No data</text></g>
-              )}
-              {pieData.map((s,idx)=>{
-                if(s.portion<=0) return null;
-                const d = describeArc(160,160,120,s.startAngle,s.endAngle);
-                return <path key={s.id} d={d} fill={s.color} stroke="#fff" strokeWidth={1} />
-              })}
-            </svg>
-            <div style={{flex:1, minWidth:180}}>
+          <div style={{display:'flex',gap:12,alignItems:'flex-start',flexWrap:'nowrap'}}>
+            <div style={{flex:'0 0 360px', minWidth:240}}>
+              {/* Chart will render here */}
+              <PieChart data={pieData} />
+            </div>
+            <div style={{flex:1, minWidth:220}}>
               {(() => {
                 // order legend by role priority
                 const roleOrder = { 'Chief':0, 'Deputy':1, 'Lead':2, 'Senior':3, 'Attorney':4, 'Junior':5, 'Paralegal':6 };
@@ -761,10 +779,12 @@ function Performance(){
                   return String(a.name).localeCompare(String(b.name));
                 });
                 return sorted.map(p => (
-                  <div key={p.id} style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
-                    <span style={{width:14,height:14,background:p.color,display:'inline-block'}} />
-                    <div style={{flex:1}}>{p.name}</div>
-                    <div style={{width:60,textAlign:'right'}}>{p.value}</div>
+                  <div key={p.id} style={{display:'flex',alignItems:'center',gap:8,marginBottom:6,justifyContent:'space-between'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:8}}>
+                      <span style={{width:14,height:14,background:p.color,display:'inline-block'}} />
+                      <div style={{whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:220}}>{p.name}</div>
+                    </div>
+                    <div style={{marginLeft:8, minWidth:40, textAlign:'right'}}>{p.value}</div>
                   </div>
                 ));
               })()}
