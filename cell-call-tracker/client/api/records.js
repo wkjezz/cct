@@ -1,3 +1,7 @@
+export default async function handler(req, res) {
+  const mod = await import('../../api/records.js')
+  return mod.default(req, res)
+}
 // client/pages/api/records.js
 import { kv } from '@vercel/kv';
 import { nanoid } from 'nanoid';

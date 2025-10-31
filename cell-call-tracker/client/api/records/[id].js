@@ -1,3 +1,7 @@
+export default async function handler(req, res) {
+  const mod = await import('../../../api/[id].js')
+  return mod.default(req, res)
+}
 // client/api/records/[id].js
 import { kv } from '@vercel/kv'
 
