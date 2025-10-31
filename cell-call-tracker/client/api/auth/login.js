@@ -7,11 +7,8 @@ export default function handler(req, res){
     const scope = 'identify'
     const state = ''
 
-    if(!clientId) return res.status(500).send('DISCORD_CLIENT_ID not configured')
-
-    const params = new URLSearchParams({ client_id: clientId, redirect_uri: redirect, response_type: 'code', scope, prompt: 'consent', state })
-    res.writeHead(302, { Location: `${DISCORD_AUTHORIZE}?${params.toString()}` })
-    res.end()
+    // DEBUG: return environment values so we can see why this function fails in prod.
+    return res.status(200).json({ clientId: !!clientId, redirect, baseUrl: process.env.BASE_URL || null })
   } catch (err) {
     console.error('auth/login error', err)
     res.status(500).json({ error: String(err) })
