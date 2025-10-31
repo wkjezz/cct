@@ -1,5 +1,5 @@
 import React from 'react'
-import admins from '../data/admins.json'
+import admins from '../../data/admins.json'
 import AiLogo from './AiLogo'
 import { API } from '../lib/utils'
 
