@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       // Filters (all optional)
-  const { from, to, staffId, cellCallType } = req.query
+  const { from, to, staffId, cellCallType, verdict } = req.query
 
       const fromMs = from ? parseMs(from, 0) : 0
       const toMs = to ? parseMs(to, Date.now() + 365 * 24 * 3600 * 1000) : Date.now() + 365 * 24 * 3600 * 1000
@@ -33,6 +33,7 @@ export default async function handler(req, res) {
       const rows = (items || []).filter(Boolean).filter(r => {
         if (staffId && String(r.leadingId) !== String(staffId)) return false
         if (cellCallType && r.cellCallType !== cellCallType) return false
+        if (verdict && r.verdict !== verdict) return false
         return true
       })
 

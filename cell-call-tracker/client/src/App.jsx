@@ -423,10 +423,7 @@ function Analytics(){
     if(verdict) qs.set('verdict', verdict);
 
     const data = await getJSON(`${API}/records?`+qs.toString());
-    const fetched = Array.isArray(data) ? data : [];
-    // apply client-side verdict filter (API may not support it)
-    const filtered = verdict ? fetched.filter(r => r && r.verdict === verdict) : fetched;
-    setRows(filtered); // never crash UI on API error
+    setRows(Array.isArray(data) ? data : []); // never crash UI on API error
     setLoading(false);
   }
   useEffect(()=>{load()},[]);

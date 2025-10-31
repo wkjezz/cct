@@ -70,8 +70,9 @@ export default async function handler(req, res) {
       // List with filters (default)
       const from = parseISOorNull(url.searchParams.get('from'));
       const to = parseISOorNull(url.searchParams.get('to'));
-  const staffId = url.searchParams.get('staffId') || '';
-  const cellCallType = url.searchParams.get('cellCallType') || '';
+         const staffId = url.searchParams.get('staffId') || '';
+         const cellCallType = url.searchParams.get('cellCallType') || '';
+         const verdict = url.searchParams.get('verdict') || '';
 
       // newest first
       const ids = await kv.zrange(indexKey, 0, -1, { rev: true });
@@ -87,6 +88,7 @@ export default async function handler(req, res) {
         if (to && (!Number.isFinite(t) || t > to.getTime())) return false;
         if (staffId && String(r.leadingId) !== String(staffId)) return false;
         if (cellCallType && r.cellCallType !== cellCallType) return false;
+           if (verdict && r.verdict !== verdict) return false;
         return true;
       });
 
