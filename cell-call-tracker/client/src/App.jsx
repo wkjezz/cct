@@ -59,6 +59,18 @@ function PieChart({ data }){
   );
 }
 
+function canonicalRole(role){
+  if(!role) return 'Other';
+  const r = String(role).toLowerCase();
+  if(/chief|deputy/.test(r)) return 'Command';
+  if(/lead/.test(r)) return 'Lead';
+  if(/senior/.test(r)) return 'Senior';
+  if(/junior/.test(r)) return 'Junior';
+  if(/paralegal/.test(r)) return 'Paralegal';
+  if(/attorney|lawyer|counsel/.test(r)) return 'Attorney';
+  return 'Other';
+}
+
 /* ========== Chips (selected people) ========== */
 function ChipList({items, render, onRemove}){
   return (
@@ -756,91 +768,63 @@ function Performance(){
             </div>
           )}
         </div>
-
-        <div className="card" style={{width:'100%'}}>
-          <h3>Call Call Distribution</h3>
-          <div style={{display:'flex',gap:12,alignItems:'flex-start',flexWrap:'nowrap'}}>
-            <div style={{flex:'0 0 360px', minWidth:240}}>
-              {/* Chart will render here */}
-              <PieChart data={pieData} />
-            </div>
-            <div style={{flex:1, minWidth:220}}>
-              {(() => {
-                // order legend by role priority
-                const roleOrder = { 'Chief':0, 'Deputy':1, 'Lead':2, 'Senior':3, 'Attorney':4, 'Junior':5, 'Paralegal':6 };
-                const rank = (r)=>{
-                  if(!r) return 999;
-                  for(const k of Object.keys(roleOrder)) if(new RegExp(k,'i').test(r)) return roleOrder[k];
-                  return 999;
-                };
-                const sorted = pieData.slice().sort((a,b)=>{
-                  const ra = rank(a.role); const rb = rank(b.role);
-                  if(ra !== rb) return ra - rb;
-                  return String(a.name).localeCompare(String(b.name));
-                });
-                return sorted.map(p => (
-                  <div key={p.id} style={{display:'flex',alignItems:'center',gap:8,marginBottom:6,justifyContent:'space-between'}}>
+        <div style={{display:'flex', gap:12, alignItems:'flex-start'}}>
+          <div className="card" style={{flex:1}}>
+            <h3>Call Call Distribution</h3>
+            <div style={{display:'flex',flexDirection:'column',gap:12}}>
+              <div style={{display:'flex',justifyContent:'center'}}>
+                <div style={{width:360, maxWidth:'100%'}}>
+                  <PieChart data={pieData} />
+                </div>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:8}}>
+                {pieData.slice().map(p => (
+                  <div key={p.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
                     <div style={{display:'flex',alignItems:'center',gap:8}}>
-                      <span style={{width:14,height:14,background:p.color,display:'inline-block'}} />
-                      <div style={{whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:220}}>{p.name}</div>
+                      <span style={{width:12,height:12,background:p.color,display:'inline-block'}} />
+                      <div style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.name}</div>
                     </div>
-                    <div style={{marginLeft:8, minWidth:40, textAlign:'right'}}>{p.value}</div>
+                    <div style={{minWidth:32,textAlign:'right'}}>{p.value}</div>
                   </div>
-                ));
-              })()}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="card" style={{width:'100%'}}>
-          <h3>Distribution by Role</h3>
-          <div style={{display:'flex',gap:12,alignItems:'flex-start',flexWrap:'nowrap'}}>
-            <div style={{flex:'0 0 360px', minWidth:240}}>
-              <PieChart data={(() => {
-                // aggregate table rows into role buckets
-                const buckets = { Command:0, Lead:0, Senior:0, Attorney:0, Junior:0, Paralegal:0, Other:0 };
-                const matchRole = (r)=>{
-                  if(!r) return 'Other';
-                  if(/chief|deputy/i.test(r)) return 'Command';
-                  if(/lead/i.test(r)) return 'Lead';
-                  if(/senior/i.test(r)) return 'Senior';
-                  if(/paralegal/i.test(r)) return 'Paralegal';
-                  if(/junior/i.test(r)) return 'Junior';
-                  if(/attorney|lawyer|counsel/i.test(r)) return 'Attorney';
-                  return 'Other';
-                };
-                for(const t of table){ const cat = matchRole(t.role); buckets[cat] += (t.lead + t.supervised); }
-                const colors = { Command:'#4e79a7', Lead:'#f28e2b', Senior:'#e15759', Attorney:'#76b7b2', Junior:'#59a14f', Paralegal:'#edc948', Other:'#b07aa1' };
-                return Object.keys(buckets).map((k,idx)=>({ name:k, value:buckets[k], color: colors[k] || '#999' }));
-              })()} />
-            </div>
-            <div style={{flex:1, minWidth:220}}>
-              {(() => {
-                const data = (function(){
-                  const buckets = { Command:0, Lead:0, Senior:0, Attorney:0, Junior:0, Paralegal:0, Other:0 };
-                  const matchRole = (r)=>{
-                    if(!r) return 'Other';
-                    if(/chief|deputy/i.test(r)) return 'Command';
-                    if(/lead/i.test(r)) return 'Lead';
-                    if(/senior/i.test(r)) return 'Senior';
-                    if(/paralegal/i.test(r)) return 'Paralegal';
-                    if(/junior/i.test(r)) return 'Junior';
-                    if(/attorney|lawyer|counsel/i.test(r)) return 'Attorney';
-                    return 'Other';
-                  };
-                  for(const t of table){ const cat = matchRole(t.role); buckets[cat] += (t.lead + t.supervised); }
-                  const colors = { Command:'#4e79a7', Lead:'#f28e2b', Senior:'#e15759', Attorney:'#76b7b2', Junior:'#59a14f', Paralegal:'#edc948', Other:'#b07aa1' };
-                  return Object.keys(buckets).map(k=>({ name:k, value:buckets[k], color: colors[k] }));
-                })();
-                return data.map(d => (
-                  <div key={d.name} style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,justifyContent:'space-between'}}>
-                    <div style={{display:'flex',alignItems:'center',gap:8}}>
-                      <span style={{width:14,height:14,background:d.color,display:'inline-block'}} />
-                      <div style={{whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:220}}>{d.name}</div>
+
+          <div className="card" style={{flex:1}}>
+            <h3>Distribution by Role</h3>
+            <div style={{display:'flex',flexDirection:'column',gap:12}}>
+              <div style={{display:'flex',justifyContent:'center'}}>
+                <div style={{width:360, maxWidth:'100%'}}>
+                  <PieChart data={(() => {
+                    const buckets = { Command:0, Lead:0, Senior:0, Attorney:0, Junior:0, Paralegal:0, Other:0 };
+                    const matchRole = (r)=> canonicalRole(r);
+                    for(const t of table){ const cat = matchRole(t.role); buckets[cat] += (t.lead + t.supervised); }
+                    const colors = { Command:'#4e79a7', Lead:'#f28e2b', Senior:'#e15759', Attorney:'#76b7b2', Junior:'#59a14f', Paralegal:'#edc948', Other:'#b07aa1' };
+                    return Object.keys(buckets).map((k,idx)=>({ name:k, value:buckets[k], color: colors[k] || '#999' }));
+                  })()} />
+                </div>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:8}}>
+                {(() => {
+                  const data = (function(){
+                    const buckets = { Command:0, Lead:0, Senior:0, Attorney:0, Junior:0, Paralegal:0, Other:0 };
+                    const matchRole = (r)=> canonicalRole(r);
+                    for(const t of table){ const cat = matchRole(t.role); buckets[cat] += (t.lead + t.supervised); }
+                    const colors = { Command:'#4e79a7', Lead:'#f28e2b', Senior:'#e15759', Attorney:'#76b7b2', Junior:'#59a14f', Paralegal:'#edc948', Other:'#b07aa1' };
+                    return Object.keys(buckets).map(k=>({ name:k, value:buckets[k], color: colors[k] }));
+                  })();
+                  return data.map(d => (
+                    <div key={d.name} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
+                      <div style={{display:'flex',alignItems:'center',gap:8}}>
+                        <span style={{width:12,height:12,background:d.color,display:'inline-block'}} />
+                        <div style={{whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{d.name}</div>
+                      </div>
+                      <div style={{minWidth:32,textAlign:'right'}}>{d.value}</div>
                     </div>
-                    <div style={{marginLeft:8, minWidth:40, textAlign:'right'}}>{d.value}</div>
-                  </div>
-                ));
-              })()}
+                  ));
+                })()}
+              </div>
             </div>
           </div>
         </div>
