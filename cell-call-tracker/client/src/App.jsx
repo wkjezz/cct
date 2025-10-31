@@ -107,7 +107,6 @@ function Form({ onSaved }){
     fine: '',
     sentenceMonths: '',
     cellCallType: 'CELL_CALL',
-    incidentType: 'HUT',
     notes: '',
     by: 'dev-ui'
   });
@@ -161,7 +160,6 @@ function Form({ onSaved }){
       fine: form.fine === '' ? null : Number(form.fine),
       sentenceMonths: form.sentenceMonths === '' ? null : Number(form.sentenceMonths),
       cellCallType: form.cellCallType,
-      incidentType: form.incidentType,
       notes: form.notes,
       by: form.by
     };
@@ -403,7 +401,6 @@ function Analytics(){
   const [to,setTo]=useState(todayYMD());
   const [staffId,setStaffId]=useState('');
   const [cellCallType,setCellCallType]=useState('');
-  const [incidentType,setIncidentType]=useState('');
   const [rows,setRows]=useState([]);
   const [loading,setLoading]=useState(false);
   const [copied,setCopied]=useState(false);
@@ -421,8 +418,7 @@ function Analytics(){
     if(from)qs.set('from',toLocalMidnightISO(from));
     if(to){const end=new Date(to);end.setDate(end.getDate()+1);qs.set('to',end.toISOString())}
     if(staffId)qs.set('staffId',staffId);
-    if(cellCallType)qs.set('cellCallType',cellCallType);
-    if(incidentType)qs.set('incidentType',incidentType);
+  if(cellCallType)qs.set('cellCallType',cellCallType);
 
     const data = await getJSON(`${API}/records?`+qs.toString());
     setRows(Array.isArray(data) ? data : []); // never crash UI on API error
@@ -492,12 +488,6 @@ function Analytics(){
           <option value="WARRANT_ARREST">Warrant Arrest</option>
           <option value="SENTENCING_HEARING">Sentencing Hearing</option>
         </select></label>
-      <label className="field"><Label>Incident Type</Label>
-        <select value={incidentType} onChange={e=>setIncidentType(e.target.value)}>
-          <option value="">All</option>
-          <option value="HUT">HUT</option>
-          <option value="CRIMINAL">CRIMINAL</option>
-        </select></label>
     </Row>
 
     <div className="row" style={{marginTop:12}}>
@@ -522,7 +512,7 @@ function Analytics(){
             <thead>
               <tr>
                 <th>Date</th><th>Incident</th><th>DOJ #</th><th>Leading</th><th>Verdict</th>
-                <th>Charges Removed?</th><th>Charges Replaced?</th><th>Fine</th><th>Sentence</th><th>Type</th><th>Incident Type</th><th></th>
+                <th>Charges Removed?</th><th>Charges Replaced?</th><th>Fine</th><th>Sentence</th><th>Type</th><th></th>
               </tr>
             </thead>
             <tbody>
@@ -538,7 +528,6 @@ function Analytics(){
                   <td>{r.fine ?? '-'}</td>
                   <td>{r.sentenceMonths ?? '-'}</td>
                   <td>{r.cellCallType}</td>
-                  <td>{r.incidentType}</td>
                   <td>
                     <button
                       onClick={() => { if(window.confirm('Delete this record?')) deleteRecord(r.id) }}
@@ -548,7 +537,7 @@ function Analytics(){
                   </td>
                 </tr>
               ))}
-              {rows.length===0 && <tr><td colSpan="12" style={{textAlign:'center'}}>No records</td></tr>}
+              {rows.length===0 && <tr><td colSpan="11" style={{textAlign:'center'}}>No records</td></tr>}
             </tbody>
           </table>
         </div>

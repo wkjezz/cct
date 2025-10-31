@@ -44,7 +44,6 @@ export default async function handler(req, res) {
         sentenceMonths: b.sentenceMonths === undefined ? existing?.sentenceMonths : (b.sentenceMonths === null || b.sentenceMonths === '' ? null : Number(b.sentenceMonths)),
 
         cellCallType: b.cellCallType !== undefined ? b.cellCallType : existing?.cellCallType,
-        incidentType: b.incidentType !== undefined ? b.incidentType : existing?.incidentType,
         notes: b.notes !== undefined ? b.notes : existing?.notes,
         by: b.by !== undefined ? b.by : existing?.by || 'unknown'
       })

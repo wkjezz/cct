@@ -70,9 +70,8 @@ export default async function handler(req, res) {
       // List with filters (default)
       const from = parseISOorNull(url.searchParams.get('from'));
       const to = parseISOorNull(url.searchParams.get('to'));
-      const staffId = url.searchParams.get('staffId') || '';
-      const cellCallType = url.searchParams.get('cellCallType') || '';
-      const incidentType = url.searchParams.get('incidentType') || '';
+  const staffId = url.searchParams.get('staffId') || '';
+  const cellCallType = url.searchParams.get('cellCallType') || '';
 
       // newest first
       const ids = await kv.zrange(indexKey, 0, -1, { rev: true });
@@ -88,7 +87,6 @@ export default async function handler(req, res) {
         if (to && (!Number.isFinite(t) || t > to.getTime())) return false;
         if (staffId && String(r.leadingId) !== String(staffId)) return false;
         if (cellCallType && r.cellCallType !== cellCallType) return false;
-        if (incidentType && r.incidentType !== incidentType) return false;
         return true;
       });
 
@@ -159,7 +157,6 @@ export default async function handler(req, res) {
         sentenceMonths: body.sentenceMonths === null || body.sentenceMonths === '' || body.sentenceMonths === undefined ? null : Number(body.sentenceMonths),
 
         cellCallType: body.cellCallType,
-        incidentType: body.incidentType,
         notes: body.notes || '',
         by: body.by || body.loggedBy || 'web',
       };

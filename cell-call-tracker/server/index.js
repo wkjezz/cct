@@ -82,7 +82,6 @@ app.post('/api/records', (req, res) => {
     fine: b.fine === null || b.fine === '' || b.fine === undefined ? null : Number(b.fine),
     sentenceMonths: b.sentenceMonths === null || b.sentenceMonths === '' || b.sentenceMonths === undefined ? null : Number(b.sentenceMonths),
     cellCallType: b.cellCallType,
-    incidentType: b.incidentType,
     notes: b.notes || '',
     loggedBy: b.by || 'TEMP_NO_AUTH'
   };
@@ -100,7 +99,6 @@ app.get('/api/records', (req, res) => {
   const to = q.to ? new Date(q.to) : null;
   const staffId = q.staffId ? String(q.staffId) : '';
   const cellCallType = q.cellCallType || '';
-  const incidentType = q.incidentType || '';
 
   const rows = readJson(RECORDS_FILE, []).filter(r => {
     const t = new Date(r.date);
@@ -108,7 +106,6 @@ app.get('/api/records', (req, res) => {
     if (to && t > to) return false;
     if (staffId && String(r.leadingId) !== staffId) return false;
     if (cellCallType && r.cellCallType !== cellCallType) return false;
-    if (incidentType && r.incidentType !== incidentType) return false;
     return true;
   });
   res.json(rows);

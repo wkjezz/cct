@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       // Filters (all optional)
-      const { from, to, staffId, cellCallType, incidentType } = req.query
+  const { from, to, staffId, cellCallType } = req.query
 
       const fromMs = from ? parseMs(from, 0) : 0
       const toMs = to ? parseMs(to, Date.now() + 365 * 24 * 3600 * 1000) : Date.now() + 365 * 24 * 3600 * 1000
@@ -33,7 +33,6 @@ export default async function handler(req, res) {
       const rows = (items || []).filter(Boolean).filter(r => {
         if (staffId && String(r.leadingId) !== String(staffId)) return false
         if (cellCallType && r.cellCallType !== cellCallType) return false
-        if (incidentType && r.incidentType !== incidentType) return false
         return true
       })
 
@@ -79,7 +78,6 @@ export default async function handler(req, res) {
         sentenceMonths: b.sentenceMonths === null || b.sentenceMonths === '' || b.sentenceMonths === undefined ? null : Number(b.sentenceMonths),
 
         cellCallType: b.cellCallType,
-        incidentType: b.incidentType,
         notes: b.notes || '',
         by: b.by || b.loggedBy || 'unknown',
       }
