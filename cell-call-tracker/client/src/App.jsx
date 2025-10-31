@@ -28,6 +28,9 @@ export default function App(){
   const [staffCount,setStaffCount]=useState(0);
   const [user,setUser]=useState(null);
   const [checkedAuth,setCheckedAuth]=useState(false);
+  const [forceNonAdmin, setForceNonAdmin] = useState(() => {
+    try { return Boolean(typeof window !== 'undefined' && localStorage.getItem('dev_force_non_admin') === '1') } catch { return false }
+  });
 
   useEffect(()=>{
     (async () => {
@@ -60,6 +63,12 @@ export default function App(){
 
   if (!checkedAuth) return null; // hide everything until auth resolved
 
+  // effectiveUser mirrors user but allows a dev-only client-side override to simulate non-admins
+  const effectiveUser = useMemo(() => {
+    if (!user) return null;
+    return { ...user, admin: !!user.admin && !forceNonAdmin };
+  }, [user, forceNonAdmin]);
+
   return (
   <div style={{maxWidth:1100,margin:'24px auto'}}>
     <header className="card" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
@@ -71,9 +80,9 @@ export default function App(){
         <button className="btn" onClick={()=>setView('performance')}>Performance</button>
       </nav>
       <div style={{display:'flex',alignItems:'center',gap:12}}>
-        {/* show admin display name only when user is admin */}
-        {user && user.admin && (
-          <span style={{fontSize:12,color:'var(--text-light)',opacity:.95,fontWeight:600}}>{admins[user.id] || (typeof window !== 'undefined' && localStorage.getItem(`rpName_${user.id}`)) || user.username.replace(/#\d+$/, '')}</span>
+        {/* show admin display name only when effective user is admin */}
+        {effectiveUser && effectiveUser.admin && (
+          <span style={{fontSize:12,color:'var(--text-light)',opacity:.95,fontWeight:600}}>{admins[effectiveUser.id] || (typeof window !== 'undefined' && localStorage.getItem(`rpName_${effectiveUser.id}`)) || effectiveUser.username.replace(/#\d+$/, '')}</span>
         )}
         {user && (
           <div style={{display:'flex',alignItems:'center',gap:8}}>
@@ -95,6 +104,20 @@ export default function App(){
             {/* show RP name if user set it in localStorage as rpName_<id> otherwise show nothing (keeps header compact) */}
             {typeof window !== 'undefined' && localStorage.getItem(`rpName_${user.id}`) && (
               <span style={{fontSize:12,opacity:.95}}>{localStorage.getItem(`rpName_${user.id}`)}</span>
+            )}
+            {/* Dev-only toggle: let admin simulate non-admin view locally */}
+            {user.admin && (
+              <button
+                className="btn"
+                style={{fontSize:11,padding:'4px 8px'}}
+                onClick={() => {
+                  try {
+                    const next = !forceNonAdmin;
+                    setForceNonAdmin(next);
+                    if (next) localStorage.setItem('dev_force_non_admin', '1'); else localStorage.removeItem('dev_force_non_admin');
+                  } catch (e) {}
+                }}
+              >{forceNonAdmin ? 'Dev: view as admin' : 'Dev: view as non-admin'}</button>
             )}
           </div>
         )}
