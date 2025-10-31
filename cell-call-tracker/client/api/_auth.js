@@ -1,7 +1,12 @@
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.AUTH_JWT_SECRET || ''
-const EDITOR_IDS = (process.env.EDITOR_IDS || '').split(',').map(s => s.trim()).filter(Boolean)
+// Primary editor IDs (comma-separated) provided via environment.
+const RAW_EDITOR_IDS = (process.env.EDITOR_IDS || '').split(',').map(s => s.trim()).filter(Boolean)
+// Optional comma-separated list of IDs to exclude (useful for temporary preview testing).
+const EXCLUDE_EDITOR_IDS = (process.env.EDITOR_EXCLUDE_IDS || '').split(',').map(s => s.trim()).filter(Boolean)
+// Final editor list excludes any IDs present in EXCLUDE_EDITOR_IDS
+const EDITOR_IDS = RAW_EDITOR_IDS.filter(id => !EXCLUDE_EDITOR_IDS.includes(id))
 const COOKIE_NAME = 'cct_session'
 
 function parseCookies(req) {
@@ -18,7 +23,7 @@ export function signUser(user) {
   const payload = {
     id: String(user.id),
     username: user.username,
-    admin: EDITOR_IDS.includes(String(user.id)),
+  admin: EDITOR_IDS.includes(String(user.id)),
     avatar: user.avatar || null,
   }
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' })
