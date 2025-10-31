@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import Header from './components/HeaderNew'
+import Header from './components/Header'
 import HomeOptions from './components/HomeOptions'
 import SmartView from './components/SmartView'
 import ChipList from './components/ChipList'

@@ -1,12 +1,14 @@
 import React from 'react'
-import admins from '../data/admins.json'
+import admins from '../../data/admins.json'
 import AiLogo from './AiLogo'
 import { API } from '../lib/utils'
 
+// Single clean Header component. Keeps header compact (avatar + optional RP name) and provides logout.
 export default function Header({ effectiveUser, user, setView }) {
   return (
     <header className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <b>Cell Call Tracker</b>
+
       <nav style={{ display: 'flex', gap: 8 }}>
         <button className="btn" onClick={() => setView('landing')}>Home</button>
         {effectiveUser?.admin && <button className="btn" onClick={() => setView('form')}>Report Cell Call</button>}
