@@ -93,7 +93,7 @@ export default function App(){
   {view==='form-manual' && <FormManual user={effectiveUser} onSaved={()=>console.log('saved')} />}
       {view==='analytics' && <Analytics user={effectiveUser} />}
       {view==='performance' && <Performance />}
-      {view==='smart' && <SmartView />}
+  {view==='smart' && <SmartView user={effectiveUser} onSaved={()=>console.log('saved')} setView={setView} />}
     </div>
   )
 }
