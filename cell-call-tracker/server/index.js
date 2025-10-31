@@ -111,6 +111,24 @@ app.get('/api/records', (req, res) => {
   res.json(rows);
 });
 
+// Simple image analysis mock endpoint. Accepts JSON { image: dataUrl }
+app.post('/api/analyze', express.json(), (req, res) => {
+  const body = req.body || {};
+  const img = body.image || '';
+  if (!img) return res.status(400).json({ error: 'image required' });
+
+  // Minimal mock parsing: return fixed example values and attempt to pick a leadingId from staff
+  const staff = readJson(STAFF_FILE, []);
+  const leadingId = staff.length ? staff[0].id : null;
+
+  // Example deterministic mock: use timestamp digits for DOJ/incident to vary per request
+  const ts = Date.now().toString();
+  const doj = ts.slice(-6);
+  const inc = ts.slice(-12,-6) || '000000';
+
+  return res.json({ dojReportNumber: doj, incidentId: inc, date: new Date().toISOString().slice(0,10), leadingId, notes: 'Mock analysis — please verify.' });
+});
+
 // Delete record by ID
 app.delete('/api/records/:id', (req, res) => {
   const { id } = req.params;

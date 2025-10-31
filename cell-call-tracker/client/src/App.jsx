@@ -7,6 +7,7 @@ import AddSelect from './components/AddSelect'
 import PieChart from './components/PieChart'
 import LastLogged from './components/LastLogged'
 import Form from './components/Form'
+import FormManual from './components/FormManual'
 import Analytics from './components/Analytics'
 import Performance from './components/Performance'
 import { getJSON, API, toLocalMidnightISO, todayYMD, daysAgoYMD, fmtDateUS, fmtDateTimeEST, canonicalRole } from './lib/utils'
@@ -88,7 +89,8 @@ export default function App(){
         </div>
       )}
 
-      {view==='form' && <Form user={effectiveUser} onSaved={()=>console.log('saved')} />}
+  {view==='form' && <Form user={effectiveUser} onSaved={()=>console.log('saved')} />}
+  {view==='form-manual' && <FormManual user={effectiveUser} onSaved={()=>console.log('saved')} />}
       {view==='analytics' && <Analytics user={effectiveUser} />}
       {view==='performance' && <Performance />}
       {view==='smart' && <SmartView />}
