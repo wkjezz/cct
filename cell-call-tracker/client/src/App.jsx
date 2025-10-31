@@ -519,7 +519,7 @@ function Analytics(){
       <label className="field"><Label>To</Label><input type="date" value={to} onChange={e=>setTo(e.target.value)}/></label>
     </Row>
     <Row>
-      <label className="field"><Label>Staff (LEADING only)</Label>
+      <label className="field"><Label>Staff</Label>
         <select value={staffId} onChange={e=>setStaffId(e.target.value)}>
           <option value="">All</option>{staff.map(s=><option key={s.id} value={s.id}>{s.name}{s.role?` (${s.role})`:''}</option>)}
         </select></label>
