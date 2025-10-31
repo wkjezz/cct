@@ -397,11 +397,20 @@ function Analytics(){
   const [staff,setStaff]=useState([]);
   const staffMap=useMemo(()=>Object.fromEntries(staff.map(s=>[String(s.id),s])),[staff]);
 
+  // Draft filter states (bound to inputs)
   const [from,setFrom]=useState(daysAgoYMD(30));
   const [to,setTo]=useState(todayYMD());
   const [staffId,setStaffId]=useState('');
   const [cellCallType,setCellCallType]=useState('');
   const [verdict,setVerdict]=useState('');
+
+  // Active filters used for loading (updated when Apply Filters is clicked)
+  const [activeFrom,setActiveFrom]=useState(from);
+  const [activeTo,setActiveTo]=useState(to);
+  const [activeStaffId,setActiveStaffId]=useState(staffId);
+  const [activeCellCallType,setActiveCellCallType]=useState(cellCallType);
+  const [activeVerdict,setActiveVerdict]=useState(verdict);
+
   const [rows,setRows]=useState([]);
   const [allRows,setAllRows]=useState([]);
   const [loading,setLoading]=useState(false);
@@ -414,31 +423,36 @@ function Analytics(){
     })();
   },[]);
 
-  async function load(){
+  // load accepts optional overrides so Apply Filters can pass the draft filters
+  async function load(overrides = {}){
     setLoading(true);
+    const srcFrom = overrides.from ?? activeFrom;
+    const srcTo = overrides.to ?? activeTo;
+    const srcStaff = overrides.staffId ?? activeStaffId;
+    const srcCellCallType = overrides.cellCallType ?? activeCellCallType;
+    const srcVerdict = overrides.verdict ?? activeVerdict;
+
     const qs=new URLSearchParams();
-    if(from)qs.set('from',toLocalMidnightISO(from));
-    if(to){const end=new Date(to);end.setDate(end.getDate()+1);qs.set('to',end.toISOString())}
-    if(staffId)qs.set('staffId',staffId);
-    if(cellCallType)qs.set('cellCallType',cellCallType);
-    if(verdict) qs.set('verdict', verdict);
+    if(srcFrom)qs.set('from',toLocalMidnightISO(srcFrom));
+    if(srcTo){const end=new Date(srcTo);end.setDate(end.getDate()+1);qs.set('to',end.toISOString())}
+    if(srcStaff)qs.set('staffId',srcStaff);
+    if(srcCellCallType)qs.set('cellCallType',srcCellCallType);
+    if(srcVerdict) qs.set('verdict', srcVerdict);
 
     const data = await getJSON(`${API}/records?`+qs.toString());
     const fetched = Array.isArray(data) ? data : [];
-    setRows(fetched); // rows shown in table (respecting staffId -> leading filter)
+    setRows(fetched); // rows shown in table (respecting active staff -> leading filter)
 
     // Also fetch full dataset for observed-count calculations when a staff filter is active.
-    // We want observed counts to reflect records where the selected staff appears as an observer,
-    // even if they're not the lead. Build a copy of the querystring without staffId.
     try {
       const qs2 = new URLSearchParams(qs.toString());
       qs2.delete('staffId');
       const allData = await getJSON(`${API}/records?` + qs2.toString());
-      setAllRows(Array.isArray(allData) ? allData : []);
+      setAllRows(Array.isArray(allData) ? allData : fetched);
     } catch (e) {
-      // fallback to the displayed rows if the extra fetch fails
       setAllRows(fetched);
     }
+
     setLoading(false);
   }
   useEffect(()=>{load()},[]);
@@ -449,37 +463,40 @@ function Analytics(){
     const chargesReplaced=rows.filter(r=>r.chargesRemoved && r.chargesReplaced).length;
     const bench=rows.filter(r=>r.verdict==='BENCH_REQUEST').length;
     const notGuilty = rows.filter(r=>r.verdict==='NOT_GUILTY').length;
+
     // For observed counts, use allRows when a staff is selected so we include records
     // where the staff appears as an observer even if they are not the lead.
-      const sourceForObserved = staffId ? allRows : rows;
-      const filterByDate = (arr) => {
-        if (!Array.isArray(arr)) return [];
-        return arr.filter(r => {
-          const ts = Date.parse(r.createdAt || r.date);
-          if (!Number.isFinite(ts)) return false;
-          if (from) {
-            const fromMs = Date.parse(toLocalMidnightISO(from));
-            if (ts < fromMs) return false;
-          }
-          if (to) {
-            const end = new Date(to); end.setDate(end.getDate()+1);
-            if (ts >= end.getTime()) return false;
-          }
-          return true;
-        });
-      };
-      const observedSourceFiltered = filterByDate(sourceForObserved);
-      const observedCount = staffId
-        ? observedSourceFiltered.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.map(String).includes(String(staffId))) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.map(String).includes(String(staffId)))).length
-        : observedSourceFiltered.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.length>0) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.length>0)).length;
+    const sourceForObserved = activeStaffId ? allRows : rows;
+    const filterByDate = (arr) => {
+      if (!Array.isArray(arr)) return [];
+      return arr.filter(r => {
+        const ts = Date.parse(r.createdAt || r.date);
+        if (!Number.isFinite(ts)) return false;
+        if (activeFrom) {
+          const fromMs = Date.parse(toLocalMidnightISO(activeFrom));
+          if (ts < fromMs) return false;
+        }
+        if (activeTo) {
+          const end = new Date(activeTo); end.setDate(end.getDate()+1);
+          if (ts >= end.getTime()) return false;
+        }
+        return true;
+      });
+    };
+
+    const observedSourceFiltered = filterByDate(sourceForObserved);
+    const observedCount = activeStaffId
+      ? observedSourceFiltered.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.map(String).includes(String(activeStaffId))) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.map(String).includes(String(activeStaffId)))).length
+      : observedSourceFiltered.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.length>0) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.length>0)).length;
+
     const totalFine=rows.reduce((s,r)=>s+(Number(r.fine)||0),0);
     const totalMonths=rows.reduce((s,r)=>s+(Number(r.sentenceMonths)||0),0);
     const byType=rows.reduce((m,r)=>((m[r.cellCallType]=(m[r.cellCallType]||0)+1),m),{});
-    const supervisionCount = staffId
-      ? rows.filter(r => Array.isArray(r.supervising) && r.supervising.map(String).includes(String(staffId))).length
+    const supervisionCount = activeStaffId
+      ? rows.filter(r => Array.isArray(r.supervising) && r.supervising.map(String).includes(String(activeStaffId))).length
       : rows.reduce((s,r)=> s + (Array.isArray(r.supervising) ? r.supervising.length : 0), 0);
     return{total,chargesRemoved,chargesReplaced,bench,notGuilty,observedCount,totalFine,totalMonths,byType,supervisionCount};
-  },[rows,allRows,staffId]);
+  },[rows,allRows,activeStaffId,activeFrom,activeTo]);
 
   async function deleteRecord(id){
     if(!window.confirm('Delete this record?'))return;
@@ -491,9 +508,9 @@ function Analytics(){
   async function generateReport(){
     const lines=[];
     lines.push(`## DOJ Analytics Report`);
-    lines.push(`**Date Range:** ${from} → ${to}`);
-    if(staffId){const s=staffMap[String(staffId)];lines.push(`**Lead Attorney:** ${s?.name||staffId}`)}
-    const totalLabel = staffId ? 'Cell Calls Lead' : 'Total Records';
+    lines.push(`**Date Range:** ${activeFrom} → ${activeTo}`);
+    if(activeStaffId){const s=staffMap[String(activeStaffId)];lines.push(`**Lead Attorney:** ${s?.name||activeStaffId}`)}
+    const totalLabel = activeStaffId ? 'Cell Calls Lead' : 'Total Records';
     lines.push(`**${totalLabel}:** ${kpi.total}`);
   lines.push(`**Cell Calls Supervised:** ${kpi.supervisionCount}`);
   lines.push(`**Cell Calls Observed:** ${kpi.observedCount}`);
@@ -541,7 +558,7 @@ function Analytics(){
     </Row>
 
     <div className="row" style={{marginTop:12}}>
-      <div className="card"><h3>{staffId ? 'Cell Calls Lead' : 'Total Records'}</h3><p style={{fontSize:28,margin:0}}>{kpi.total}</p></div>
+      <div className="card"><h3>{activeStaffId ? 'Cell Calls Lead' : 'Total Records'}</h3><p style={{fontSize:28,margin:0}}>{kpi.total}</p></div>
       <div className="card"><h3>Charges Removed</h3><p style={{fontSize:28,margin:0}}>{kpi.chargesRemoved}</p></div>
   <div className="card"><h3>Cell Calls Supervised</h3><p style={{fontSize:28,margin:0}}>{kpi.supervisionCount}</p></div>
   <div className="card"><h3>Cell Calls Observed</h3><p style={{fontSize:28,margin:0}}>{kpi.observedCount}</p></div>
@@ -552,7 +569,7 @@ function Analytics(){
     </div>
 
     <div className="row" style={{marginTop:12}}>
-      <button className="btn" onClick={load}>Apply Filters</button>
+      <button className="btn" onClick={()=>{ setActiveFrom(from); setActiveTo(to); setActiveStaffId(staffId); setActiveCellCallType(cellCallType); setActiveVerdict(verdict); load({ from, to, staffId, cellCallType, verdict }); }}>Apply Filters</button>
       <button className="btn" onClick={generateReport}>Generate Report</button>
       {copied && <span className="pill">✅ Report copied to clipboard</span>}
     </div>
