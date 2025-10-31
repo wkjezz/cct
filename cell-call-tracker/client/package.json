@@ -9,6 +9,8 @@
     "gen-jwt": "node ./dev/gen-jwt.mjs",
   "dev:all": "node ./dev/start-all.mjs vite",
   "dev:all:vercel": "node ./dev/start-all.mjs vercel",
+  "start-dev-automated": "node ./dev/setup-dev.mjs vite",
+  "start-dev-automated:vercel": "node ./dev/setup-dev.mjs vercel",
     "build": "vite build",
     "preview": "vite preview"
   },
