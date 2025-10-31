@@ -2,11 +2,8 @@
   "version": 2,
   "builds": [
     { "src": "cell-call-tracker/api/**/*.js", "use": "@vercel/node" },
-    { "src": "cell-call-tracker/client/package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } }
-  ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/cell-call-tracker/api/$1.js" },
-    { "src": "/(.*)", "dest": "/cell-call-tracker/client/dist/$1" },
-    { "src": "/", "dest": "/cell-call-tracker/client/dist/index.html" }
+    { "src": "api/**/*.js", "use": "@vercel/node" },
+    { "src": "cell-call-tracker/client/package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } },
+    { "src": "client/package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } }
   ]
 }
