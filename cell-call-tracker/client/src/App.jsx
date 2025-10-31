@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import admins from '../data/admins.json'
 import ChipList from './components/ChipList'
 import AddSelect from './components/AddSelect'
 import PieChart from './components/PieChart'
@@ -70,7 +71,10 @@ export default function App(){
         <button className="btn" onClick={()=>setView('performance')}>Performance</button>
       </nav>
       <div style={{display:'flex',alignItems:'center',gap:12}}>
-        <span style={{fontSize:12,color:'var(--text-light)',opacity:.8}}>{status}</span>
+        {/* show admin display name only when user is admin */}
+        {user && user.admin && (
+          <span style={{fontSize:12,color:'var(--text-light)',opacity:.95,fontWeight:600}}>{admins[user.id] || (typeof window !== 'undefined' && localStorage.getItem(`rpName_${user.id}`)) || user.username.replace(/#\d+$/, '')}</span>
+        )}
         {user && (
           <div style={{display:'flex',alignItems:'center',gap:8}}>
             {/* avatar (from JWT) - use small circle, title shows display name */}

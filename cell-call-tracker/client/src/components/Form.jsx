@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import admins from '../../data/admins.json'
 import AddSelect from './AddSelect'
 import { getJSON, API, toLocalMidnightISO, todayYMD } from '../lib/utils'
 
@@ -20,6 +21,13 @@ export default function Form({ user, onSaved }){
       setStaff(Array.isArray(rows) ? rows : []);
     })();
   },[]);
+
+  // set default logger name to admin display name (or RP/local name) when user is present
+  useEffect(() => {
+    if (!user) return;
+    const label = admins[user.id] || (typeof window !== 'undefined' ? localStorage.getItem(`rpName_${user.id}`) : null) || user.username.replace(/#\d+$/, '');
+    setForm(f => ({ ...f, by: label }));
+  }, [user]);
   const staffOpts = useMemo(()=> staff.map(s => ({ id:String(s.id), name: s.name, role: s.role })), [staff]);
 
   // Supervising list: exclude Paralegal/Junior + add Judiciary
