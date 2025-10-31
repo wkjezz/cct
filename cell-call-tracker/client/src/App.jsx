@@ -58,6 +58,24 @@ export default function App(){
   // effectiveUser is the server-determined user (no local dev override)
   const effectiveUser = user || null;
 
+  const displayName = (u) => {
+    if (!u) return ''
+    return (
+      admins[u.id] ||
+      (typeof window !== 'undefined' && localStorage.getItem(`rpName_${u.id}`)) ||
+      u.username.replace(/#\d+$/, '')
+    )
+  }
+
+  const avatarUrl = (u) => {
+    if (!u) return 'https://cdn.discordapp.com/embed/avatars/0.png'
+    const a = u.avatar
+    if (!a) return 'https://cdn.discordapp.com/embed/avatars/0.png'
+    if (String(a).startsWith('http')) return a
+    const ext = String(a).startsWith('a_') ? 'gif' : 'png'
+    return `https://cdn.discordapp.com/avatars/${u.id}/${a}.${ext}`
+  }
+
   return (
     <div style={{maxWidth:1100,margin:'24px auto'}}>
       <Header effectiveUser={effectiveUser} user={user} setView={setView} />
