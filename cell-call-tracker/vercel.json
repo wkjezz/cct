@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/**/*.js", "use": "@vercel/node" },
+    { "src": "cell-call-tracker/api/**/*.js", "use": "@vercel/node" },
+    { "src": "client/package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } },
+    { "src": "cell-call-tracker/client/package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } }
+  ]
+}
