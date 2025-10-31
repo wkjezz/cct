@@ -707,8 +707,8 @@ function Performance(){
         <button className="btn" onClick={load}>Apply Filters</button>
       </div>
 
-      <div className="row" style={{marginTop:12,alignItems:'flex-start',gap:12}}>
-        <div className="card" style={{flex:1}}>
+      <div style={{marginTop:12, display:'flex', flexDirection:'column', gap:12}}>
+        <div className="card" style={{width:'100%'}}>
           <h3>League Table</h3>
           {loading? <p>Loading…</p> : (
             <div style={{overflowX:'auto'}}>
@@ -733,10 +733,10 @@ function Performance(){
           )}
         </div>
 
-        <div className="card" style={{width:360}}>
-          <h3>Calls Distribution (Lead + Supervised)</h3>
-          <div style={{display:'flex',gap:8,alignItems:'center'}}>
-            <svg width={320} height={320} viewBox="0 0 320 320">
+        <div className="card" style={{width:'100%'}}>
+          <h3>Call Call Distribution</h3>
+          <div style={{display:'flex',gap:8,alignItems:'flex-start',flexWrap:'wrap'}}>
+            <svg width={240} height={240} viewBox="0 0 320 320">
               {pieData.length===0 && (
                 <g><text x="160" y="160" textAnchor="middle" dominantBaseline="middle">No data</text></g>
               )}
@@ -746,7 +746,7 @@ function Performance(){
                 return <path key={s.id} d={d} fill={s.color} stroke="#fff" strokeWidth={1} />
               })}
             </svg>
-            <div style={{flex:1}}>
+            <div style={{flex:1, minWidth:180}}>
               {pieData.map(p => (
                 <div key={p.id} style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
                   <span style={{width:14,height:14,background:p.color,display:'inline-block'}} />
