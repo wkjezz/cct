@@ -403,6 +403,7 @@ function Analytics(){
   const [cellCallType,setCellCallType]=useState('');
   const [verdict,setVerdict]=useState('');
   const [rows,setRows]=useState([]);
+  const [allRows,setAllRows]=useState([]);
   const [loading,setLoading]=useState(false);
   const [copied,setCopied]=useState(false);
 
@@ -423,7 +424,21 @@ function Analytics(){
     if(verdict) qs.set('verdict', verdict);
 
     const data = await getJSON(`${API}/records?`+qs.toString());
-    setRows(Array.isArray(data) ? data : []); // never crash UI on API error
+    const fetched = Array.isArray(data) ? data : [];
+    setRows(fetched); // rows shown in table (respecting staffId -> leading filter)
+
+    // Also fetch full dataset for observed-count calculations when a staff filter is active.
+    // We want observed counts to reflect records where the selected staff appears as an observer,
+    // even if they're not the lead. Build a copy of the querystring without staffId.
+    try {
+      const qs2 = new URLSearchParams(qs.toString());
+      qs2.delete('staffId');
+      const allData = await getJSON(`${API}/records?` + qs2.toString());
+      setAllRows(Array.isArray(allData) ? allData : []);
+    } catch (e) {
+      // fallback to the displayed rows if the extra fetch fails
+      setAllRows(fetched);
+    }
     setLoading(false);
   }
   useEffect(()=>{load()},[]);
@@ -432,13 +447,14 @@ function Analytics(){
     const total=rows.length;
     const chargesRemoved=rows.filter(r=>r.chargesRemoved).length;
     const chargesReplaced=rows.filter(r=>r.chargesRemoved && r.chargesReplaced).length;
-  const bench=rows.filter(r=>r.verdict==='BENCH_REQUEST').length;
-  const notGuilty = rows.filter(r=>r.verdict==='NOT_GUILTY').length;
-    // Cell Calls Observed: if a staff is selected, count records where that staff appears
-    // in attorneyObservers or paralegalObservers; otherwise count any record with observers.
+    const bench=rows.filter(r=>r.verdict==='BENCH_REQUEST').length;
+    const notGuilty = rows.filter(r=>r.verdict==='NOT_GUILTY').length;
+    // For observed counts, use allRows when a staff is selected so we include records
+    // where the staff appears as an observer even if they are not the lead.
+    const sourceForObserved = staffId ? allRows : rows;
     const observedCount = staffId
-      ? rows.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.map(String).includes(String(staffId))) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.map(String).includes(String(staffId)))).length
-      : rows.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.length>0) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.length>0)).length;
+      ? sourceForObserved.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.map(String).includes(String(staffId))) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.map(String).includes(String(staffId)))).length
+      : sourceForObserved.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.length>0) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.length>0)).length;
     const totalFine=rows.reduce((s,r)=>s+(Number(r.fine)||0),0);
     const totalMonths=rows.reduce((s,r)=>s+(Number(r.sentenceMonths)||0),0);
     const byType=rows.reduce((m,r)=>((m[r.cellCallType]=(m[r.cellCallType]||0)+1),m),{});
@@ -446,7 +462,7 @@ function Analytics(){
       ? rows.filter(r => Array.isArray(r.supervising) && r.supervising.map(String).includes(String(staffId))).length
       : rows.reduce((s,r)=> s + (Array.isArray(r.supervising) ? r.supervising.length : 0), 0);
     return{total,chargesRemoved,chargesReplaced,bench,notGuilty,observedCount,totalFine,totalMonths,byType,supervisionCount};
-  },[rows,staffId]);
+  },[rows,allRows,staffId]);
 
   async function deleteRecord(id){
     if(!window.confirm('Delete this record?'))return;
