@@ -1,9 +1,4 @@
-export default async function handler(req, res) {
-  try {
-    const mod = await import('../../api/ping.js')
-    return mod.default(req, res)
-  } catch (err) {
-    console.error('proxy ping error', err)
-    res.status(500).json({ error: String(err).slice(0,1000) })
-  }
+export default function handler(_req, res) {
+  res.setHeader('Content-Type','application/json')
+  res.status(200).json({ ok: true, service: 'cell-call-tracker', ts: new Date().toISOString() })
 }
