@@ -493,7 +493,8 @@ function Analytics(){
     lines.push(`## DOJ Analytics Report`);
     lines.push(`**Date Range:** ${from} → ${to}`);
     if(staffId){const s=staffMap[String(staffId)];lines.push(`**Lead Attorney:** ${s?.name||staffId}`)}
-  lines.push(`**Total Records (Led):** ${kpi.total}`);
+    const totalLabel = staffId ? 'Cell Calls Lead' : 'Total Records';
+    lines.push(`**${totalLabel}:** ${kpi.total}`);
   lines.push(`**Cell Calls Supervised:** ${kpi.supervisionCount}`);
   lines.push(`**Cell Calls Observed:** ${kpi.observedCount}`);
     lines.push(`**Charges Removed:** ${kpi.chargesRemoved}`);
@@ -540,7 +541,7 @@ function Analytics(){
     </Row>
 
     <div className="row" style={{marginTop:12}}>
-      <div className="card"><h3>Total Records</h3><p style={{fontSize:28,margin:0}}>{kpi.total}</p></div>
+      <div className="card"><h3>{staffId ? 'Cell Calls Lead' : 'Total Records'}</h3><p style={{fontSize:28,margin:0}}>{kpi.total}</p></div>
       <div className="card"><h3>Charges Removed</h3><p style={{fontSize:28,margin:0}}>{kpi.chargesRemoved}</p></div>
   <div className="card"><h3>Cell Calls Supervised</h3><p style={{fontSize:28,margin:0}}>{kpi.supervisionCount}</p></div>
   <div className="card"><h3>Cell Calls Observed</h3><p style={{fontSize:28,margin:0}}>{kpi.observedCount}</p></div>
