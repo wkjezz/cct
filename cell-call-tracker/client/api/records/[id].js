@@ -1,10 +1,21 @@
-export default async function handler(req, res) {
-  try {
-    const mod = await import('../../../api/[id].js')
-    return mod.default(req, res)
-  } catch (err) {
-    console.error('proxy records/[id] error', err)
-    res.status(500).json({ error: String(err).slice(0,1000) })
+import fs from 'fs'
+import path from 'path'
+
+export default function handler(req, res){
+  try{
+    const { id } = req.query || {}
+    if(!id) return res.status(400).json({ error: 'id required' })
+    if(req.method !== 'GET') return res.status(405).json({ error: 'Method Not Allowed' })
+
+    const dataPath = path.join(process.cwd(), 'data', 'records.json')
+    const raw = fs.readFileSync(dataPath, 'utf-8')
+    const rows = JSON.parse(raw || '[]')
+    const rec = (rows || []).find(r => String(r.id) === String(id))
+    if(!rec) return res.status(404).json({ error: 'Not found' })
+    return res.status(200).json(rec)
+  }catch(err){
+    console.error('records/[id] handler error', err)
+    return res.status(500).json({ error: String(err).slice(0,1000) })
   }
 }
 // client/api/records/[id].js

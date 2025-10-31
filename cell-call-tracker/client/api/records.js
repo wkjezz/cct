@@ -1,10 +1,34 @@
-export default async function handler(req, res) {
-  try {
-    const mod = await import('../../api/records.js')
-    return mod.default(req, res)
-  } catch (err) {
-    console.error('proxy records error', err)
-    res.status(500).json({ error: String(err).slice(0,1000) })
+import fs from 'fs'
+import path from 'path'
+
+function parseMs(v, fallback){
+  const n = Date.parse(v)
+  return Number.isFinite(n) ? n : fallback
+}
+
+export default function handler(req, res){
+  try{
+    if(req.method !== 'GET') return res.status(405).json({ error: 'Method Not Allowed' })
+
+    const { from, to } = req.query || {}
+    const dataPath = path.join(process.cwd(), 'data', 'records.json')
+    const raw = fs.readFileSync(dataPath, 'utf-8')
+    const rows = JSON.parse(raw || '[]')
+
+    const fromMs = from ? parseMs(from, 0) : 0
+    const toMs = to ? parseMs(to, Date.now()) : Date.now()
+
+    const filtered = rows.filter(r => {
+      const t = Date.parse(r.createdAt || r.date) || 0
+      return t >= fromMs && t <= toMs
+    })
+
+    // sort newest first
+    filtered.sort((a,b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date))
+    return res.status(200).json(filtered)
+  }catch(err){
+    console.error('records handler error', err)
+    return res.status(500).json({ error: String(err).slice(0,1000) })
   }
 }
 // client/pages/api/records.js
