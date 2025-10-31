@@ -39,11 +39,17 @@ export default async function handler(req, res) {
 
     const user = await fetchDiscordUser(access_token)
 
-    // build avatar URL if present
+    // build avatar URL: prefer user avatar, otherwise use Discord default embed avatar
     let avatarUrl = null
     if (user.avatar) {
       const ext = String(user.avatar).startsWith('a_') ? 'gif' : 'png'
       avatarUrl = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${ext}`
+    } else {
+      // use discriminator to pick one of Discord's default embed avatars (0-4)
+      let disc = 0
+      try { disc = parseInt(user.discriminator || '0', 10) || 0 } catch (e) { disc = 0 }
+      const idx = disc % 5
+      avatarUrl = `https://cdn.discordapp.com/embed/avatars/${idx}.png`
     }
 
     const jwt = signUser({ id: user.id, username: `${user.username}#${user.discriminator}`, avatar: avatarUrl })
