@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev-auth": "node ./dev/dev-auth-server.mjs",
+    "gen-jwt": "node ./dev/gen-jwt.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },
