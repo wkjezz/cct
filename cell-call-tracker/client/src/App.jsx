@@ -451,10 +451,27 @@ function Analytics(){
     const notGuilty = rows.filter(r=>r.verdict==='NOT_GUILTY').length;
     // For observed counts, use allRows when a staff is selected so we include records
     // where the staff appears as an observer even if they are not the lead.
-    const sourceForObserved = staffId ? allRows : rows;
-    const observedCount = staffId
-      ? sourceForObserved.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.map(String).includes(String(staffId))) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.map(String).includes(String(staffId)))).length
-      : sourceForObserved.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.length>0) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.length>0)).length;
+      const sourceForObserved = staffId ? allRows : rows;
+      const filterByDate = (arr) => {
+        if (!Array.isArray(arr)) return [];
+        return arr.filter(r => {
+          const ts = Date.parse(r.createdAt || r.date);
+          if (!Number.isFinite(ts)) return false;
+          if (from) {
+            const fromMs = Date.parse(toLocalMidnightISO(from));
+            if (ts < fromMs) return false;
+          }
+          if (to) {
+            const end = new Date(to); end.setDate(end.getDate()+1);
+            if (ts >= end.getTime()) return false;
+          }
+          return true;
+        });
+      };
+      const observedSourceFiltered = filterByDate(sourceForObserved);
+      const observedCount = staffId
+        ? observedSourceFiltered.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.map(String).includes(String(staffId))) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.map(String).includes(String(staffId)))).length
+        : observedSourceFiltered.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.length>0) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.length>0)).length;
     const totalFine=rows.reduce((s,r)=>s+(Number(r.fine)||0),0);
     const totalMonths=rows.reduce((s,r)=>s+(Number(r.sentenceMonths)||0),0);
     const byType=rows.reduce((m,r)=>((m[r.cellCallType]=(m[r.cellCallType]||0)+1),m),{});
