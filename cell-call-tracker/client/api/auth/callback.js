@@ -39,7 +39,14 @@ export default async function handler(req, res) {
 
     const user = await fetchDiscordUser(access_token)
 
-    const jwt = signUser({ id: user.id, username: `${user.username}#${user.discriminator}` })
+    // build avatar URL if present
+    let avatarUrl = null
+    if (user.avatar) {
+      const ext = String(user.avatar).startsWith('a_') ? 'gif' : 'png'
+      avatarUrl = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${ext}`
+    }
+
+    const jwt = signUser({ id: user.id, username: `${user.username}#${user.discriminator}`, avatar: avatarUrl })
     // set cookie and redirect home
     res.setHeader('Set-Cookie', cookieHeaderForToken(jwt))
     res.writeHead(302, { Location: '/' })

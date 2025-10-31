@@ -71,7 +71,21 @@ export default function App(){
       </nav>
       <div style={{display:'flex',alignItems:'center',gap:12}}>
         <span style={{fontSize:12,color:'var(--text-light)',opacity:.8}}>{status}</span>
-        {user && <span style={{fontSize:12,opacity:.9}}>Signed in: <b>{user.username}</b>{user.admin ? ' (admin)' : ''}</span>}
+        {user && (
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            {/* avatar (from JWT) - use small circle, title shows display name */}
+            <img
+              src={user.avatar || '/favicon.ico'}
+              alt="avatar"
+              title={(typeof window !== 'undefined' && (localStorage.getItem(`rpName_${user.id}`) || user.username.replace(/#\d+$/, ''))) || user.username}
+              style={{width:28,height:28,borderRadius:14,objectFit:'cover',boxShadow:'0 0 0 2px rgba(0,0,0,0.1)'}}
+            />
+            {/* show RP name if user set it in localStorage as rpName_<id> otherwise show nothing (keeps header compact) */}
+            {typeof window !== 'undefined' && localStorage.getItem(`rpName_${user.id}`) && (
+              <span style={{fontSize:12,opacity:.95}}>{localStorage.getItem(`rpName_${user.id}`)}</span>
+            )}
+          </div>
+        )}
       </div>
     </header>
 

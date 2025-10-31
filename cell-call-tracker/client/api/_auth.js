@@ -19,6 +19,7 @@ export function signUser(user) {
     id: String(user.id),
     username: user.username,
     admin: EDITOR_IDS.includes(String(user.id)),
+    avatar: user.avatar || null,
   }
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' })
 }
@@ -35,6 +36,7 @@ export function getUserFromReq(req) {
       id: String(user.id),
       username: user.username,
       admin: !!user.admin,
+      avatar: user.avatar || null,
     }
   } catch (err) {
     return null
