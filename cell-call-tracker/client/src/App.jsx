@@ -64,10 +64,7 @@ export default function App(){
   if (!checkedAuth) return null; // hide everything until auth resolved
 
   // effectiveUser mirrors user but allows a dev-only client-side override to simulate non-admins
-  const effectiveUser = useMemo(() => {
-    if (!user) return null;
-    return { ...user, admin: !!user.admin && !forceNonAdmin };
-  }, [user, forceNonAdmin]);
+  const effectiveUser = user ? { ...user, admin: !!user.admin && !forceNonAdmin } : null;
 
   return (
   <div style={{maxWidth:1100,margin:'24px auto'}}>
