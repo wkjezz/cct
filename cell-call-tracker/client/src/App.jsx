@@ -25,6 +25,7 @@ export default function App(){
   const [view,setView]=useState('landing');
   const [status,setStatus]=useState('Checking API...');
   const [staffCount,setStaffCount]=useState(0);
+  const [user, setUser] = useState(null);
 
   useEffect(()=>{
     (async () => {
@@ -33,8 +34,26 @@ export default function App(){
 
       const s = await getJSON(`${API}/staff`);
       setStaffCount(Array.isArray(s) ? s.length : 0);
+
+      // fetch current user
+      try {
+        const me = await getJSON('/api/auth/me');
+        setUser(me);
+      } catch (e) {
+        setUser(null);
+      }
     })();
   },[]);
+
+  async function logout(){
+    try{
+      await fetch('/api/auth/logout', { method: 'POST' })
+    }catch(e){}
+    setUser(null)
+    setView('landing')
+  }
+
+  function login(){ window.location.href = '/api/auth/login' }
 
   return (
   <div style={{maxWidth:1100,margin:'24px auto'}}>
@@ -42,20 +61,32 @@ export default function App(){
       <b>Cell Call Tracker</b>
       <nav style={{display:'flex',gap:8}}>
         <button className="btn" onClick={()=>setView('landing')}>Home</button>
-        <button className="btn" onClick={()=>setView('form')}>Report Cell Call</button>
+        {user?.isEditor && <button className="btn" onClick={()=>setView('form')}>Report Cell Call</button>}
         <button className="btn" onClick={()=>setView('analytics')}>Analytics</button>
         <button className="btn" onClick={()=>setView('performance')}>Performance</button>
       </nav>
-      <span style={{fontSize:12,color:'var(--text-light)',opacity:.8}}>{status}</span>
+      <div style={{display:'flex',alignItems:'center',gap:12}}>
+        <span style={{fontSize:12,color:'var(--text-light)',opacity:.8}}>{status}</span>
+        {user ? (
+          <>
+            <span className="pill">{user.username}{user.discriminator?`#${user.discriminator}`:''}{user.isEditor? ' (Editor)':''}</span>
+            <button className="btn" onClick={logout}>Logout</button>
+          </>
+        ) : (
+          <button className="btn" onClick={login}>Login</button>
+        )}
+      </div>
     </header>
 
     {view==='landing' && (
       <div style={{display:'flex',flexDirection:'column',gap:16,marginTop:16}}>
         <div className="home-options" style={{display:'flex',gap:16}}>
-          <div className="card" style={{flex:1,textAlign:'center',cursor:'pointer'}} onClick={()=>setView('form')}>
-            <h2>Report Cell Call</h2>
-            <p>Create a new record.</p>
-          </div>
+          {user?.isEditor && (
+            <div className="card" style={{flex:1,textAlign:'center',cursor:'pointer'}} onClick={()=>setView('form')}>
+              <h2>Report Cell Call</h2>
+              <p>Create a new record.</p>
+            </div>
+          )}
           <div className="card" style={{flex:1,textAlign:'center',cursor:'pointer'}} onClick={()=>setView('analytics')}>
             <h2>Analytics</h2>
             <p>View counts and filters.</p>
@@ -70,8 +101,8 @@ export default function App(){
       </div>
     )}
 
-    {view==='form' && <Form onSaved={()=>console.log('saved')} />}
-    {view==='analytics' && <Analytics />}
-    {view==='performance' && <Performance />}
+    {view==='form' && user?.isEditor && <Form onSaved={()=>console.log('saved')} user={user} />}
+    {view==='analytics' && <Analytics user={user} />}
+    {view==='performance' && <Performance user={user} />}
   </div>);
 }

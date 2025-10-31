@@ -6,6 +6,18 @@ export default async function handler(req, res) {
     const { id } = req.query || {}
     if (!id) return res.status(400).json({ error: 'id required' })
 
+    // Require editor for DELETE/PUT
+    if (req.method !== 'GET') {
+      try {
+        const { getUserFromReq } = await import('../_auth.js')
+        const user = getUserFromReq(req)
+        if (!user || !user.isEditor) return res.status(403).json({ error: 'Forbidden' })
+      } catch (e) {
+        console.error('auth check failed', e)
+        return res.status(500).json({ error: 'Auth check failed' })
+      }
+    }
+
     if (req.method === 'DELETE') {
       await kv.del(`record:${id}`)
       await kv.zrem('records:byCreated', id)

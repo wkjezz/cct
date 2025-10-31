@@ -14,6 +14,17 @@ function parseMs(v, fallback) {
 
 export default async function handler(req, res) {
   try {
+    // Allow public GETs but require editor for mutating actions
+    if (req.method !== 'GET') {
+      try {
+        const { getUserFromReq } = await import('./_auth.js')
+        const user = getUserFromReq(req)
+        if (!user || !user.isEditor) return res.status(403).json({ error: 'Forbidden' })
+      } catch (e) {
+        console.error('auth check failed', e)
+        return res.status(500).json({ error: 'Auth check failed' })
+      }
+    }
     if (req.method === 'GET') {
       // Filters (all optional)
   const { from, to, staffId, cellCallType, verdict } = req.query
