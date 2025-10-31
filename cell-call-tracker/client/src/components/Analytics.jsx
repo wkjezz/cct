@@ -5,7 +5,7 @@ function Label({children}){ return <div className="label">{children}</div> }
 function Row({children}){ return <div className="row">{children}</div> }
 function Divider(){ return <div className="section-sep" /> }
 
-export default function Analytics(){
+export default function Analytics({ user }){
   const [staff,setStaff]=useState([]);
   const staffMap=useMemo(()=>Object.fromEntries(staff.map(s=>[String(s.id),s])),[staff]);
 
@@ -211,11 +211,13 @@ export default function Analytics(){
                   <td>{r.sentenceMonths ?? '-'}</td>
                   <td>{r.cellCallType}</td>
                   <td>
-                    <button
-                      onClick={() => { if(window.confirm('Delete this record?')) deleteRecord(r.id) }}
-                      style={{ background:'transparent', border:'none', color:'var(--text-light)', cursor:'pointer', fontSize:'1.2em' }}
-                      title="Delete record"
-                    >🗑️</button>
+                    {user?.admin ? (
+                      <button
+                        onClick={() => { if(window.confirm('Delete this record?')) deleteRecord(r.id) }}
+                        style={{ background:'transparent', border:'none', color:'var(--text-light)', cursor:'pointer', fontSize:'1.2em' }}
+                        title="Delete record"
+                      >🗑️</button>
+                    ) : null}
                   </td>
                 </tr>
               ))}

@@ -1,5 +1,6 @@
 // client/pages/api/records.js
 import { kv } from '@vercel/kv';
+import { getUserFromReq, isAdminId } from './_auth.js';
 import { nanoid } from 'nanoid';
 
 function ok(res, data) { return res.status(200).json(data); }
@@ -49,6 +50,9 @@ export default async function handler(req, res) {
   // ---------- GET ----------
   if (req.method === 'GET') {
     try {
+      // require authentication for all views
+      const user = getUserFromReq(req)
+      if (!user) return res.status(401).json({ error: 'Unauthorized' })
       const url = new URL(req.url, 'http://localhost');
       const id = getIdFromReq(req);
       const doj = url.searchParams.get('doj');
@@ -111,6 +115,9 @@ export default async function handler(req, res) {
   // ---------- POST (create) ----------
   if (req.method === 'POST') {
     try {
+      const user = getUserFromReq(req)
+      if (!user) return bad(res, 'Unauthorized', 401)
+      if (!user.admin) return bad(res, 'Forbidden', 403)
       if (!body.incidentId) return bad(res, 'incidentId required');
       if (!body.dojReportNumber) return bad(res, 'dojReportNumber required');
       if (body.leadingId === undefined || body.leadingId === null) return bad(res, 'leadingId required');
@@ -178,6 +185,9 @@ export default async function handler(req, res) {
   // ---------- PUT (update) ----------
   if (req.method === 'PUT') {
     try {
+      const user = getUserFromReq(req)
+      if (!user) return bad(res, 'Unauthorized', 401)
+      if (!user.admin) return bad(res, 'Forbidden', 403)
       const url = new URL(req.url, 'http://localhost');
       const id = getIdFromReq(req) || body.id;
       if (!id) return bad(res, 'id required');
@@ -221,6 +231,9 @@ export default async function handler(req, res) {
   // ---------- DELETE ----------
   if (req.method === 'DELETE') {
     try {
+      const user = getUserFromReq(req)
+      if (!user) return bad(res, 'Unauthorized', 401)
+      if (!user.admin) return bad(res, 'Forbidden', 403)
       const id = getIdFromReq(req);
       if (!id) return bad(res, 'id required');
 
