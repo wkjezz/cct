@@ -645,18 +645,18 @@ function Performance(){
 
   const table = useMemo(()=>{
     const map = {};
-    function ensure(id, name){ if(!map[id]) map[id]={ id, name: name||id, lead:0, supervised:0, chargesRemoved:0 } }
-    staff.forEach(s=> ensure(String(s.id), s.name));
+    function ensure(id, name, role){ if(!map[id]) map[id]={ id, name: name||id, role: role||'', lead:0, supervised:0, chargesRemoved:0 } }
+    staff.forEach(s=> ensure(String(s.id), s.name, s.role));
 
     for(const r of rows){
       const leadId = r.leadingId!=null ? String(r.leadingId) : null;
-      if(leadId){ ensure(leadId, staff.find(s=>String(s.id)===leadId)?.name); map[leadId].lead++ }
+      if(leadId){ const s = staff.find(s=>String(s.id)===leadId); ensure(leadId, s?.name, s?.role); map[leadId].lead++ }
 
       if(Array.isArray(r.supervising)){
-        for(const sid of r.supervising){ const id=String(sid); ensure(id, staff.find(s=>String(s.id)===id)?.name); map[id].supervised++ }
+        for(const sid of r.supervising){ const id=String(sid); const s = staff.find(s=>String(s.id)===id); ensure(id, s?.name, s?.role); map[id].supervised++ }
       }
 
-      if(r.chargesRemoved){ if(leadId){ ensure(leadId, staff.find(s=>String(s.id)===leadId)?.name); map[leadId].chargesRemoved++ } }
+      if(r.chargesRemoved){ if(leadId){ const s = staff.find(s=>String(s.id)===leadId); ensure(leadId, s?.name, s?.role); map[leadId].chargesRemoved++ } }
     }
 
     const arr = Object.values(map);
@@ -683,7 +683,7 @@ function Performance(){
   }
 
   const pieData = useMemo(()=>{
-    const list = table.map(t=>({ id:t.id, name:t.name, value: t.lead + t.supervised }));
+    const list = table.map(t=>({ id:t.id, name:t.name, role: t.role, value: t.lead + t.supervised }));
     const total = list.reduce((s,i)=>s+i.value,0) || 0;
     let angle = 0;
     const colors = ['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc948','#b07aa1','#ff9da7','#9c755f','#bab0ac'];
@@ -747,13 +747,27 @@ function Performance(){
               })}
             </svg>
             <div style={{flex:1, minWidth:180}}>
-              {pieData.map(p => (
-                <div key={p.id} style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
-                  <span style={{width:14,height:14,background:p.color,display:'inline-block'}} />
-                  <div style={{flex:1}}>{p.name}</div>
-                  <div style={{width:60,textAlign:'right'}}>{p.value}</div>
-                </div>
-              ))}
+              {(() => {
+                // order legend by role priority
+                const roleOrder = { 'Chief':0, 'Deputy':1, 'Lead':2, 'Senior':3, 'Attorney':4, 'Junior':5, 'Paralegal':6 };
+                const rank = (r)=>{
+                  if(!r) return 999;
+                  for(const k of Object.keys(roleOrder)) if(new RegExp(k,'i').test(r)) return roleOrder[k];
+                  return 999;
+                };
+                const sorted = pieData.slice().sort((a,b)=>{
+                  const ra = rank(a.role); const rb = rank(b.role);
+                  if(ra !== rb) return ra - rb;
+                  return String(a.name).localeCompare(String(b.name));
+                });
+                return sorted.map(p => (
+                  <div key={p.id} style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                    <span style={{width:14,height:14,background:p.color,display:'inline-block'}} />
+                    <div style={{flex:1}}>{p.name}</div>
+                    <div style={{width:60,textAlign:'right'}}>{p.value}</div>
+                  </div>
+                ));
+              })()}
             </div>
           </div>
         </div>
