@@ -768,16 +768,16 @@ function Performance(){
             </div>
           )}
         </div>
-        <div style={{display:'flex', gap:12, alignItems:'flex-start'}}>
-          <div className="card" style={{flex:1}}>
+        <div style={{display:'flex', gap:12, alignItems:'stretch'}}>
+          <div className="card" style={{flex:1, display:'flex', flexDirection:'column'}}>
             <h3>Call Call Distribution</h3>
-            <div style={{display:'flex',flexDirection:'column',gap:12}}>
+            <div style={{display:'flex',flexDirection:'column',gap:12, flex:1}}>
               <div style={{display:'flex',justifyContent:'center'}}>
                 <div style={{width:360, maxWidth:'100%'}}>
                   <PieChart data={pieData} />
                 </div>
               </div>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:8}}>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:8, marginTop:'auto'}}>
                 {pieData.slice().map(p => (
                   <div key={p.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
                     <div style={{display:'flex',alignItems:'center',gap:8}}>
@@ -791,9 +791,9 @@ function Performance(){
             </div>
           </div>
 
-          <div className="card" style={{flex:1}}>
+          <div className="card" style={{flex:1, display:'flex', flexDirection:'column'}}>
             <h3>Distribution by Role</h3>
-            <div style={{display:'flex',flexDirection:'column',gap:12}}>
+            <div style={{display:'flex',flexDirection:'column',gap:12, flex:1}}>
               <div style={{display:'flex',justifyContent:'center'}}>
                 <div style={{width:360, maxWidth:'100%'}}>
                   <PieChart data={(() => {
@@ -805,7 +805,7 @@ function Performance(){
                   })()} />
                 </div>
               </div>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:8}}>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:8, marginTop:'auto'}}>
                 {(() => {
                   const data = (function(){
                     const buckets = { Command:0, Lead:0, Senior:0, Attorney:0, Junior:0, Paralegal:0, Other:0 };
