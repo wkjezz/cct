@@ -616,6 +616,151 @@ function Analytics(){
   </div>);
 }
 
+/* ========== PERFORMANCE ========== */
+function Performance(){
+  const [from,setFrom]=useState(daysAgoYMD(30));
+  const [to,setTo]=useState(todayYMD());
+  const [staff,setStaff]=useState([]);
+  const [rows,setRows]=useState([]);
+  const [loading,setLoading]=useState(false);
+
+  useEffect(()=>{
+    (async()=>{
+      const s = await getJSON(`${API}/staff`);
+      setStaff(Array.isArray(s)?s:[]);
+    })();
+  },[]);
+
+  async function load(){
+    setLoading(true);
+    const qs = new URLSearchParams();
+    if(from) qs.set('from', toLocalMidnightISO(from));
+    if(to){ const end=new Date(to); end.setDate(end.getDate()+1); qs.set('to', end.toISOString()) }
+    const data = await getJSON(`${API}/records?`+qs.toString());
+    setRows(Array.isArray(data)?data:[]);
+    setLoading(false);
+  }
+
+  useEffect(()=>{ load() },[]);
+
+  const table = useMemo(()=>{
+    const map = {};
+    function ensure(id, name){ if(!map[id]) map[id]={ id, name: name||id, lead:0, supervised:0, chargesRemoved:0 } }
+    staff.forEach(s=> ensure(String(s.id), s.name));
+
+    for(const r of rows){
+      const leadId = r.leadingId!=null ? String(r.leadingId) : null;
+      if(leadId){ ensure(leadId, staff.find(s=>String(s.id)===leadId)?.name); map[leadId].lead++ }
+
+      if(Array.isArray(r.supervising)){
+        for(const sid of r.supervising){ const id=String(sid); ensure(id, staff.find(s=>String(s.id)===id)?.name); map[id].supervised++ }
+      }
+
+      if(r.chargesRemoved){ if(leadId){ ensure(leadId, staff.find(s=>String(s.id)===leadId)?.name); map[leadId].chargesRemoved++ } }
+    }
+
+    const arr = Object.values(map);
+    arr.sort((a,b)=>{
+      const ta = a.lead + a.supervised;
+      const tb = b.lead + b.supervised;
+      if(tb !== ta) return tb - ta;
+      if(b.chargesRemoved !== a.chargesRemoved) return b.chargesRemoved - a.chargesRemoved;
+      return String(a.name).localeCompare(String(b.name));
+    });
+    return arr;
+  },[rows,staff]);
+
+  // Pie chart helpers
+  function polarToCartesian(cx, cy, r, angleDeg){
+    const a = (angleDeg-90) * Math.PI/180.0;
+    return { x: cx + (r * Math.cos(a)), y: cy + (r * Math.sin(a)) };
+  }
+  function describeArc(cx, cy, r, startAngle, endAngle){
+    const start = polarToCartesian(cx, cy, r, endAngle);
+    const end = polarToCartesian(cx, cy, r, startAngle);
+    const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
+    return [`M ${cx} ${cy}`, `L ${start.x} ${start.y}`, `A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`, 'Z'].join(' ');
+  }
+
+  const pieData = useMemo(()=>{
+    const list = table.map(t=>({ id:t.id, name:t.name, value: t.lead + t.supervised }));
+    const total = list.reduce((s,i)=>s+i.value,0) || 0;
+    let angle = 0;
+    const colors = ['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc948','#b07aa1','#ff9da7','#9c755f','#bab0ac'];
+    return list.map((it,idx)=>{
+      const portion = total? (it.value/total) : 0;
+      const start = angle;
+      const end = angle + portion*360;
+      angle = end;
+      return { ...it, portion, startAngle:start, endAngle:end, color: colors[idx % colors.length] };
+    });
+  },[table]);
+
+  return (
+    <div className="card" style={{marginTop:16}}>
+      <h2>Performance</h2>
+      <Row>
+        <label className="field"><Label>From</Label><input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label>
+        <label className="field"><Label>To</Label><input type="date" value={to} onChange={e=>setTo(e.target.value)}/></label>
+      </Row>
+      <div className="row" style={{marginTop:8}}>
+        <button className="btn" onClick={load}>Apply Filters</button>
+      </div>
+
+      <div className="row" style={{marginTop:12,alignItems:'flex-start',gap:12}}>
+        <div className="card" style={{flex:1}}>
+          <h3>League Table</h3>
+          {loading? <p>Loading…</p> : (
+            <div style={{overflowX:'auto'}}>
+              <table>
+                <thead>
+                  <tr><th>Staff</th><th>Lead Calls</th><th>Supervised Calls</th><th>Charges Removed</th><th>Total</th></tr>
+                </thead>
+                <tbody>
+                  {table.map(t=> (
+                    <tr key={t.id}>
+                      <td>{t.name}</td>
+                      <td>{t.lead}</td>
+                      <td>{t.supervised}</td>
+                      <td>{t.chargesRemoved}</td>
+                      <td>{t.lead + t.supervised}</td>
+                    </tr>
+                  ))}
+                  {table.length===0 && <tr><td colSpan={5} style={{textAlign:'center'}}>No data</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="card" style={{width:360}}>
+          <h3>Calls Distribution (Lead + Supervised)</h3>
+          <div style={{display:'flex',gap:8,alignItems:'center'}}>
+            <svg width={320} height={320} viewBox="0 0 320 320">
+              {pieData.length===0 && (
+                <g><text x="160" y="160" textAnchor="middle" dominantBaseline="middle">No data</text></g>
+              )}
+              {pieData.map((s,idx)=>{
+                if(s.portion<=0) return null;
+                const d = describeArc(160,160,120,s.startAngle,s.endAngle);
+                return <path key={s.id} d={d} fill={s.color} stroke="#fff" strokeWidth={1} />
+              })}
+            </svg>
+            <div style={{flex:1}}>
+              {pieData.map(p => (
+                <div key={p.id} style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                  <span style={{width:14,height:14,background:p.color,display:'inline-block'}} />
+                  <div style={{flex:1}}>{p.name}</div>
+                  <div style={{width:60,textAlign:'right'}}>{p.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 /* ========== APP SHELL ========== */
 export default function App(){
   const [view,setView]=useState('landing');
@@ -640,6 +785,7 @@ export default function App(){
         <button className="btn" onClick={()=>setView('landing')}>Home</button>
         <button className="btn" onClick={()=>setView('form')}>Report Cell Call</button>
         <button className="btn" onClick={()=>setView('analytics')}>Analytics</button>
+        <button className="btn" onClick={()=>setView('performance')}>Performance</button>
       </nav>
       <span style={{fontSize:12,color:'var(--text-light)',opacity:.8}}>{status}</span>
     </header>
@@ -667,5 +813,6 @@ export default function App(){
 
     {view==='form' && <Form onSaved={()=>console.log('saved')} />}
     {view==='analytics' && <Analytics />}
+    {view==='performance' && <Performance />}
   </div>);
 }
