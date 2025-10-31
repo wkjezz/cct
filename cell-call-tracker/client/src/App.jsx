@@ -401,6 +401,7 @@ function Analytics(){
   const [to,setTo]=useState(todayYMD());
   const [staffId,setStaffId]=useState('');
   const [cellCallType,setCellCallType]=useState('');
+  const [verdict,setVerdict]=useState('');
   const [rows,setRows]=useState([]);
   const [loading,setLoading]=useState(false);
   const [copied,setCopied]=useState(false);
@@ -418,10 +419,14 @@ function Analytics(){
     if(from)qs.set('from',toLocalMidnightISO(from));
     if(to){const end=new Date(to);end.setDate(end.getDate()+1);qs.set('to',end.toISOString())}
     if(staffId)qs.set('staffId',staffId);
-  if(cellCallType)qs.set('cellCallType',cellCallType);
+    if(cellCallType)qs.set('cellCallType',cellCallType);
+    if(verdict) qs.set('verdict', verdict);
 
     const data = await getJSON(`${API}/records?`+qs.toString());
-    setRows(Array.isArray(data) ? data : []); // never crash UI on API error
+    const fetched = Array.isArray(data) ? data : [];
+    // apply client-side verdict filter (API may not support it)
+    const filtered = verdict ? fetched.filter(r => r && r.verdict === verdict) : fetched;
+    setRows(filtered); // never crash UI on API error
     setLoading(false);
   }
   useEffect(()=>{load()},[]);
@@ -430,14 +435,16 @@ function Analytics(){
     const total=rows.length;
     const chargesRemoved=rows.filter(r=>r.chargesRemoved).length;
     const chargesReplaced=rows.filter(r=>r.chargesRemoved && r.chargesReplaced).length;
-    const bench=rows.filter(r=>r.verdict==='BENCH_REQUEST').length;
+  const bench=rows.filter(r=>r.verdict==='BENCH_REQUEST').length;
+  const notGuilty = rows.filter(r=>r.verdict==='NOT_GUILTY').length;
+  const supervisedCalls = rows.filter(r => Array.isArray(r.supervising) && r.supervising.length>0).length;
     const totalFine=rows.reduce((s,r)=>s+(Number(r.fine)||0),0);
     const totalMonths=rows.reduce((s,r)=>s+(Number(r.sentenceMonths)||0),0);
     const byType=rows.reduce((m,r)=>((m[r.cellCallType]=(m[r.cellCallType]||0)+1),m),{});
     const supervisionCount = staffId
       ? rows.filter(r => Array.isArray(r.supervising) && r.supervising.map(String).includes(String(staffId))).length
       : rows.reduce((s,r)=> s + (Array.isArray(r.supervising) ? r.supervising.length : 0), 0);
-    return{total,chargesRemoved,chargesReplaced,bench,totalFine,totalMonths,byType,supervisionCount};
+    return{total,chargesRemoved,chargesReplaced,bench,notGuilty,supervisedCalls,totalFine,totalMonths,byType,supervisionCount};
   },[rows,staffId]);
 
   async function deleteRecord(id){
@@ -488,12 +495,22 @@ function Analytics(){
           <option value="WARRANT_ARREST">Warrant Arrest</option>
           <option value="SENTENCING_HEARING">Sentencing Hearing</option>
         </select></label>
+      <label className="field"><Label>Verdict</Label>
+        <select value={verdict} onChange={e=>setVerdict(e.target.value)}>
+          <option value="">All</option>
+          <option value="NOT_GUILTY">Not Guilty Plea</option>
+          <option value="BENCH_REQUEST">Bench Trial Request</option>
+          <option value="GUILTY">Guilty</option>
+        </select></label>
     </Row>
 
     <div className="row" style={{marginTop:12}}>
       <div className="card"><h3>Total Records</h3><p style={{fontSize:28,margin:0}}>{kpi.total}</p></div>
       <div className="card"><h3>Charges Removed</h3><p style={{fontSize:28,margin:0}}>{kpi.chargesRemoved}</p></div>
-      <div className="card"><h3>Cell Calls Supervised</h3><p style={{fontSize:28,margin:0}}>{kpi.supervisionCount}</p></div>
+      <div className="card"><h3>Cell Calls Supervised (by staff selection)</h3><p style={{fontSize:28,margin:0}}>{kpi.supervisionCount}</p></div>
+      <div className="card"><h3>Cell Calls Supervised (unique calls)</h3><p style={{fontSize:28,margin:0}}>{kpi.supervisedCalls}</p></div>
+      <div className="card"><h3>Not Guilty Pleas</h3><p style={{fontSize:28,margin:0}}>{kpi.notGuilty}</p></div>
+      <div className="card"><h3>Bench Trial Requests</h3><p style={{fontSize:28,margin:0}}>{kpi.bench}</p></div>
       <div className="card"><h3>Total Fine</h3><p style={{fontSize:28,margin:0}}>${kpi.totalFine}</p></div>
       <div className="card"><h3>Total Sentence (months)</h3><p style={{fontSize:28,margin:0}}>{kpi.totalMonths}</p></div>
     </div>
