@@ -434,8 +434,11 @@ function Analytics(){
     const chargesReplaced=rows.filter(r=>r.chargesRemoved && r.chargesReplaced).length;
   const bench=rows.filter(r=>r.verdict==='BENCH_REQUEST').length;
   const notGuilty = rows.filter(r=>r.verdict==='NOT_GUILTY').length;
-  // Cell Calls Observed: any record with attorneyObservers or paralegalObservers
-  const observedCount = rows.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.length>0) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.length>0)).length;
+    // Cell Calls Observed: if a staff is selected, count records where that staff appears
+    // in attorneyObservers or paralegalObservers; otherwise count any record with observers.
+    const observedCount = staffId
+      ? rows.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.map(String).includes(String(staffId))) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.map(String).includes(String(staffId)))).length
+      : rows.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.length>0) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.length>0)).length;
     const totalFine=rows.reduce((s,r)=>s+(Number(r.fine)||0),0);
     const totalMonths=rows.reduce((s,r)=>s+(Number(r.sentenceMonths)||0),0);
     const byType=rows.reduce((m,r)=>((m[r.cellCallType]=(m[r.cellCallType]||0)+1),m),{});
