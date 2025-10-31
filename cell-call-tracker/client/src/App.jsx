@@ -75,7 +75,15 @@ export default function App(){
           <div style={{display:'flex',alignItems:'center',gap:8}}>
             {/* avatar (from JWT) - use small circle, title shows display name */}
             <img
-              src={user.avatar || '/favicon.ico'}
+              src={(() => {
+                const a = user.avatar
+                // if it's already a full URL, use it
+                if (!a) return 'https://cdn.discordapp.com/embed/avatars/0.png'
+                if (String(a).startsWith('http')) return a
+                // otherwise assume it's a Discord avatar hash and build the CDN URL
+                const ext = String(a).startsWith('a_') ? 'gif' : 'png'
+                return `https://cdn.discordapp.com/avatars/${user.id}/${a}.${ext}`
+              })()}
               alt="avatar"
               title={(typeof window !== 'undefined' && (localStorage.getItem(`rpName_${user.id}`) || user.username.replace(/#\d+$/, ''))) || user.username}
               style={{width:28,height:28,borderRadius:14,objectFit:'cover',boxShadow:'0 0 0 2px rgba(0,0,0,0.1)'}}
