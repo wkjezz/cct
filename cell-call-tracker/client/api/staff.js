@@ -1,15 +1,10 @@
-import fs from 'fs'
-import path from 'path'
-
-export default function handler(_req, res){
-  try{
-    const dataPath = path.join(process.cwd(), 'data', 'staff.json')
-    const raw = fs.readFileSync(dataPath, 'utf-8')
-    const staff = JSON.parse(raw)
-    return res.status(200).json(staff)
-  }catch(err){
-    console.error('staff handler error', err)
-    return res.status(500).json({ error: String(err).slice(0,1000) })
+export default async function handler(req, res) {
+  try {
+    const mod = await import('../../api/staff.js')
+    return mod.default(req, res)
+  } catch (err) {
+    console.error('proxy staff error', err)
+    res.status(500).json({ error: String(err).slice(0,1000) })
   }
 }
 import fs from 'fs/promises';
