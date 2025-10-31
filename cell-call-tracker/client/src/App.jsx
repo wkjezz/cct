@@ -101,7 +101,12 @@ export default function App(){
             {typeof window !== 'undefined' && localStorage.getItem(`rpName_${user.id}`) && (
               <span style={{fontSize:12,opacity:.95}}>{localStorage.getItem(`rpName_${user.id}`)}</span>
             )}
-            {/* (removed) Dev-only toggle previously allowed local simulation of non-admin; server-side role is authoritative */}
+            {/* logout button for easy re-authentication */}
+            <button
+              className="btn"
+              style={{fontSize:11,padding:'4px 8px'}}
+              onClick={() => { window.location.href = `${API}/auth/logout` }}
+            >Logout</button>
           </div>
         )}
       </div>
