@@ -6,7 +6,9 @@ function Label({children}){ return <div className="label">{children}</div> }
 function Row({children}){ return <div className="row">{children}</div> }
 function Divider(){ return <div className="section-sep" /> }
 
-export default function Form({ onSaved }){
+export default function Form({ user, onSaved }){
+  // hide the form UI for non-admins
+  if (!user || !user.admin) return null;
   const [staff, setStaff] = useState([]);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');

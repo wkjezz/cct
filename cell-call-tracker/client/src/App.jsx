@@ -65,7 +65,7 @@ export default function App(){
       <b>Cell Call Tracker</b>
       <nav style={{display:'flex',gap:8}}>
         <button className="btn" onClick={()=>setView('landing')}>Home</button>
-        <button className="btn" onClick={()=>setView('form')}>Report Cell Call</button>
+  <button className="btn" onClick={()=>user?.admin && setView('form')} disabled={!user?.admin}>Report Cell Call</button>
         <button className="btn" onClick={()=>setView('analytics')}>Analytics</button>
         <button className="btn" onClick={()=>setView('performance')}>Performance</button>
       </nav>
@@ -78,7 +78,7 @@ export default function App(){
     {view==='landing' && (
       <div style={{display:'flex',flexDirection:'column',gap:16,marginTop:16}}>
         <div className="home-options" style={{display:'flex',gap:16}}>
-          <div className="card" style={{flex:1,textAlign:'center',cursor:'pointer'}} onClick={()=>setView('form')}>
+          <div className="card" style={{flex:1,textAlign:'center',cursor:user?.admin ? 'pointer' : 'default',opacity:user?.admin?1:0.6}} onClick={()=>user?.admin && setView('form')}>
             <h2>Report Cell Call</h2>
             <p>Create a new record.</p>
           </div>
@@ -96,8 +96,8 @@ export default function App(){
       </div>
     )}
 
-    {view==='form' && <Form onSaved={()=>console.log('saved')} />}
-    {view==='analytics' && <Analytics />}
+  {view==='form' && <Form user={user} onSaved={()=>console.log('saved')} />}
+  {view==='analytics' && <Analytics user={user} />}
     {view==='performance' && <Performance />}
   </div>);
 }
