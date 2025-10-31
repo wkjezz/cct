@@ -434,14 +434,15 @@ function Analytics(){
     const chargesReplaced=rows.filter(r=>r.chargesRemoved && r.chargesReplaced).length;
   const bench=rows.filter(r=>r.verdict==='BENCH_REQUEST').length;
   const notGuilty = rows.filter(r=>r.verdict==='NOT_GUILTY').length;
-  const supervisedCalls = rows.filter(r => Array.isArray(r.supervising) && r.supervising.length>0).length;
+  // Cell Calls Observed: any record with attorneyObservers or paralegalObservers
+  const observedCount = rows.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.length>0) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.length>0)).length;
     const totalFine=rows.reduce((s,r)=>s+(Number(r.fine)||0),0);
     const totalMonths=rows.reduce((s,r)=>s+(Number(r.sentenceMonths)||0),0);
     const byType=rows.reduce((m,r)=>((m[r.cellCallType]=(m[r.cellCallType]||0)+1),m),{});
     const supervisionCount = staffId
       ? rows.filter(r => Array.isArray(r.supervising) && r.supervising.map(String).includes(String(staffId))).length
       : rows.reduce((s,r)=> s + (Array.isArray(r.supervising) ? r.supervising.length : 0), 0);
-    return{total,chargesRemoved,chargesReplaced,bench,notGuilty,supervisedCalls,totalFine,totalMonths,byType,supervisionCount};
+    return{total,chargesRemoved,chargesReplaced,bench,notGuilty,observedCount,totalFine,totalMonths,byType,supervisionCount};
   },[rows,staffId]);
 
   async function deleteRecord(id){
@@ -456,8 +457,9 @@ function Analytics(){
     lines.push(`## DOJ Analytics Report`);
     lines.push(`**Date Range:** ${from} → ${to}`);
     if(staffId){const s=staffMap[String(staffId)];lines.push(`**Lead Attorney:** ${s?.name||staffId}`)}
-    lines.push(`**Total Records (Led):** ${kpi.total}`);
-    lines.push(`**Cell Calls Supervised:** ${kpi.supervisionCount}`);
+  lines.push(`**Total Records (Led):** ${kpi.total}`);
+  lines.push(`**Cell Calls Supervised:** ${kpi.supervisionCount}`);
+  lines.push(`**Cell Calls Observed:** ${kpi.observedCount}`);
     lines.push(`**Charges Removed:** ${kpi.chargesRemoved}`);
     lines.push(`**Charges Replaced:** ${kpi.chargesReplaced}`);
     lines.push(`**Bench Requests:** ${kpi.bench}`);
@@ -504,8 +506,8 @@ function Analytics(){
     <div className="row" style={{marginTop:12}}>
       <div className="card"><h3>Total Records</h3><p style={{fontSize:28,margin:0}}>{kpi.total}</p></div>
       <div className="card"><h3>Charges Removed</h3><p style={{fontSize:28,margin:0}}>{kpi.chargesRemoved}</p></div>
-      <div className="card"><h3>Cell Calls Supervised (by staff selection)</h3><p style={{fontSize:28,margin:0}}>{kpi.supervisionCount}</p></div>
-      <div className="card"><h3>Cell Calls Supervised (unique calls)</h3><p style={{fontSize:28,margin:0}}>{kpi.supervisedCalls}</p></div>
+  <div className="card"><h3>Cell Calls Supervised</h3><p style={{fontSize:28,margin:0}}>{kpi.supervisionCount}</p></div>
+  <div className="card"><h3>Cell Calls Observed</h3><p style={{fontSize:28,margin:0}}>{kpi.observedCount}</p></div>
       <div className="card"><h3>Not Guilty Pleas</h3><p style={{fontSize:28,margin:0}}>{kpi.notGuilty}</p></div>
       <div className="card"><h3>Bench Trial Requests</h3><p style={{fontSize:28,margin:0}}>{kpi.bench}</p></div>
       <div className="card"><h3>Total Fine</h3><p style={{fontSize:28,margin:0}}>${kpi.totalFine}</p></div>
