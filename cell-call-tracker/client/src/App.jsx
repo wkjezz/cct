@@ -85,7 +85,7 @@ export default function App(){
         <button className="btn" onClick={()=>setView('analytics')}>Analytics</button>
         <button className="btn" onClick={()=>setView('performance')}>Performance</button>
         {/* visual separator before Smart Report */}
-        {effectiveUser?.admin && <span style={{alignSelf:'center',opacity:0.6,marginLeft:6,marginRight:6}}>·</span>}
+  {effectiveUser?.admin && <span style={{alignSelf:'center',opacity:0.8,marginLeft:8,marginRight:8,color:'var(--text)'}}>|</span>}
         {effectiveUser?.admin && (
           <button className="btn" onClick={()=>setView('smart')} title="Smart Report (BETA)"><AiLogo size={16} style={{marginRight:8}}/> Smart Report (BETA)</button>
         )}
