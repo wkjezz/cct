@@ -34,11 +34,11 @@ export default function LastLogged(){
   const when = addedISO ? (fmtDateTimeEST(addedISO)+' EST') : fmtDateUS(latest.date);
 
   return (
-    <div className="card" style={{marginTop:16}}>
-      <h2>Last Cell Call Logged</h2>
-      <p><b>DOJ Report:</b> {doj}</p>
-      <p><b>Added By:</b> {by}</p>
-      <p><b>Date Added:</b> {when}</p>
+    <div className="card" style={{marginTop:16, textAlign:'left'}}>
+      <h2 style={{margin:0, fontSize:20, fontWeight:700, color:'var(--text-light)'}}>Last Cell Call Logged</h2>
+      <p style={{marginTop:8, fontSize:14, color:'var(--text)'}}><b>DOJ Report:</b> {doj}</p>
+      <p style={{marginTop:6, fontSize:14, color:'var(--text)'}}><b>Added By:</b> {by}</p>
+      <p style={{marginTop:6, fontSize:14, color:'var(--text)'}}><b>Date Added:</b> {when}</p>
     </div>
   );
 }
