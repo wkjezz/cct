@@ -794,36 +794,44 @@ function Performance(){
           <div className="card" style={{flex:1, display:'flex', flexDirection:'column'}}>
             <h3>Distribution by Role</h3>
             <div style={{display:'flex',flexDirection:'column',gap:12, flex:1}}>
-              <div style={{display:'flex',justifyContent:'center'}}>
+              <div style={{display:'flex',justifyContent:'center', flexDirection:'column', alignItems:'center'}}>
                 <div style={{width:360, maxWidth:'100%'}}>
                   <PieChart data={(() => {
                     const buckets = { Command:0, Lead:0, Senior:0, Attorney:0, Junior:0, Paralegal:0, Other:0 };
                     const matchRole = (r)=> canonicalRole(r);
                     for(const t of table){ const cat = matchRole(t.role); buckets[cat] += (t.lead + t.supervised); }
                     const colors = { Command:'#4e79a7', Lead:'#f28e2b', Senior:'#e15759', Attorney:'#76b7b2', Junior:'#59a14f', Paralegal:'#edc948', Other:'#b07aa1' };
-                    return Object.keys(buckets).map((k,idx)=>({ name:k, value:buckets[k], color: colors[k] || '#999' }));
+                    return Object.keys(buckets)
+                      .filter(k => k !== 'Other')
+                      .map((k,idx)=>({ name:k, value:buckets[k], color: colors[k] || '#999' }));
                   })()} />
                 </div>
-              </div>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:8, marginTop:'auto'}}>
-                {(() => {
-                  const data = (function(){
+                <div style={{width:'100%', maxWidth:360, marginTop:12}}>
+                  {/* legend directly under the pie; hide 'Other' bucket */}
+                  {(() => {
                     const buckets = { Command:0, Lead:0, Senior:0, Attorney:0, Junior:0, Paralegal:0, Other:0 };
                     const matchRole = (r)=> canonicalRole(r);
                     for(const t of table){ const cat = matchRole(t.role); buckets[cat] += (t.lead + t.supervised); }
                     const colors = { Command:'#4e79a7', Lead:'#f28e2b', Senior:'#e15759', Attorney:'#76b7b2', Junior:'#59a14f', Paralegal:'#edc948', Other:'#b07aa1' };
-                    return Object.keys(buckets).map(k=>({ name:k, value:buckets[k], color: colors[k] }));
-                  })();
-                  return data.map(d => (
-                    <div key={d.name} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
-                      <div style={{display:'flex',alignItems:'center',gap:8}}>
-                        <span style={{width:12,height:12,background:d.color,display:'inline-block'}} />
-                        <div style={{whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{d.name}</div>
+                    const data = Object.keys(buckets)
+                      .filter(k => k !== 'Other')
+                      .map(k=>({ name:k, value:buckets[k], color: colors[k] }));
+                    return (
+                      <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:8}}>
+                        {data.map(d => (
+                          <div key={d.name} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
+                            <div style={{display:'flex',alignItems:'center',gap:8}}>
+                              <span style={{width:12,height:12,background:d.color,display:'inline-block'}} />
+                              <div style={{whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{d.name}</div>
+                            </div>
+                            <div style={{minWidth:32,textAlign:'right'}}>{d.value}</div>
+                          </div>
+                        ))}
                       </div>
-                      <div style={{minWidth:32,textAlign:'right'}}>{d.value}</div>
-                    </div>
-                  ));
-                })()}
+                    )
+                  })()}
+                </div>
+                <div style={{flex:1}} />
               </div>
             </div>
           </div>
