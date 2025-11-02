@@ -27,6 +27,19 @@ export default function SmartView({ user, onSaved, setView }){
     if (!imageFile) { setMsg('No image to analyze'); return; }
     setAnalyzing(true); setMsg('Analyzing image...');
     try {
+      // Quick health check to give a clearer error when the API isn't reachable
+      try {
+        const h = await fetch(`${API}/health`);
+        if (!h.ok) {
+          setAnalyzing(false);
+          setMsg(`API health check failed: ${h.status} ${h.statusText}`);
+          return;
+        }
+      } catch (he) {
+        setAnalyzing(false);
+        setMsg(`API unreachable: ${he.message}`);
+        return;
+      }
       const toDataURL = (file) => new Promise((res, rej) => {
         const reader = new FileReader();
         reader.onload = () => res(reader.result);
@@ -35,9 +48,10 @@ export default function SmartView({ user, onSaved, setView }){
       });
       const dataUrl = await toDataURL(imageFile);
       const res = await fetch(`${API}/analyze`, { method:'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ image: dataUrl }) });
-      const data = await res.json();
+      let data;
+      try { data = await res.json(); } catch (pj) { data = null; }
       setAnalyzing(false);
-      if (!res.ok) { setMsg(data?.error || 'Analysis failed'); return; }
+      if (!res.ok) { setMsg(data?.error || `Analysis failed: ${res.status} ${res.statusText}`); return; }
 
       // Map known fields from analysis to form keys. setValues accepts partial updates.
       const mapped = {};
