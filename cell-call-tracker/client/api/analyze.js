@@ -62,14 +62,34 @@ module.exports = async (req, res) => {
       params.append('language', 'eng');
       params.append('isOverlayRequired', 'false');
 
-      const r = await fetchMaybe('https://api.ocr.space/parse/image', { method: 'POST', body: params });
-      const j = await r.json();
-      if (!j || !j.ParsedResults || !j.ParsedResults[0]) {
-        console.error('ocr.space no parsed results', j);
-        return res.status(500).json({ error: 'ocr failed', raw: j });
+      try {
+        const r = await fetchMaybe('https://api.ocr.space/parse/image', { method: 'POST', body: params });
+        const status = r.status;
+        // attempt JSON parse, but fall back to text for diagnostics
+        let j = null;
+        try { j = await r.json(); } catch (pj) {
+          const txt = await r.text().catch(() => '<unreadable body>');
+          console.error('ocr.space returned non-json', { status, body: txt });
+          return res.status(502).json({ error: 'ocr.space returned non-json', status, body: txt });
+        }
+
+        if (!r.ok) {
+          console.error('ocr.space returned error', { status, body: j });
+          return res.status(502).json({ error: 'ocr.space returned error', status, body: j });
+        }
+
+        if (!j || !j.ParsedResults || !j.ParsedResults[0]) {
+          console.error('ocr.space no parsed results', j);
+          return res.status(502).json({ error: 'ocr.space parse failed', status, raw: j });
+        }
+
+        text = j.ParsedResults.map(p => p.ParsedText).join('\n');
+      } catch (fetchErr) {
+        console.error('ocr.space fetch error', fetchErr);
+        return res.status(502).json({ error: 'ocr.space fetch error', details: String(fetchErr) });
       }
-      text = j.ParsedResults.map(p => p.ParsedText).join('\n');
     } else {
+      console.error('OCR_SPACE_API_KEY not configured in environment');
       return res.status(500).json({ error: 'OCR_SPACE_API_KEY not configured on server' });
     }
 
