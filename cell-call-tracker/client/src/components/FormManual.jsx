@@ -33,6 +33,9 @@ export default function FormManual({ user, onSaved }){
   }, [user]);
 
   const staffOpts = useMemo(()=> staff.map(s => ({ id:String(s.id), name: s.name, role: s.role })), [staff]);
+  const paralegalOpts = useMemo(() => staff
+    .filter(s => /paralegal/i.test(s.role))
+    .map(s => ({ id: String(s.id), name: s.name, role: s.role })), [staff]);
   const supervisingOpts = useMemo(()=>{
     const allowed = staff
       .filter(s => !/paralegal/i.test(s.role) && !/junior/i.test(s.role))
@@ -215,7 +218,7 @@ export default function FormManual({ user, onSaved }){
               onAdd={id=>upd('attorneyObservers',[...new Set([...form.attorneyObservers,String(id)])])}
               onRemove={id=>upd('attorneyObservers',form.attorneyObservers.filter(x=>x!==String(id)))}/>
 
-            <AddSelect key={`par-manual`} label="Paralegal Observing" options={staffOpts}
+            <AddSelect key={`par-manual`} label="Paralegal Observing" options={paralegalOpts}
               selectedIds={form.paralegalObservers}
               onAdd={id=>upd('paralegalObservers',[...new Set([...form.paralegalObservers,String(id)])])}
               onRemove={id=>upd('paralegalObservers',form.paralegalObservers.filter(x=>x!==String(id)))}/>
