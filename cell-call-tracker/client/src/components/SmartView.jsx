@@ -47,89 +47,13 @@ export default function SmartView({ user, onSaved, setView }){
         reader.readAsDataURL(file);
       });
 
-      // Resize / upscale small images before sending to OCR to improve small-text recognition.
-      const resizeDataUrl = (dataUrl, { maxWidth = 2000, scaleFactor = 2, quality = 0.92 } = {}) => new Promise((res, rej) => {
-        const img = new Image();
-        img.onload = () => {
-          try {
-            const origW = img.naturalWidth || img.width;
-            const origH = img.naturalHeight || img.height;
-            // target width: the larger of origW * scaleFactor or maxWidth, but don't shrink
-            const targetW = Math.max(Math.min(maxWidth, Math.max(origW * scaleFactor, origW)), origW);
-            const targetH = Math.round((origH * targetW) / origW);
-            const canvas = document.createElement('canvas');
-            canvas.width = targetW;
-            canvas.height = targetH;
-            const ctx = canvas.getContext('2d');
-            // fill with white for JPEG backgrounds
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0,0,canvas.width,canvas.height);
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            // prefer JPEG to reduce size and improve OCR in many cases
-            const out = canvas.toDataURL('image/jpeg', quality);
-            res(out);
-          } catch (e) { rej(e); }
-        };
-        img.onerror = (e) => rej(new Error('failed to load image for resize'));
-        img.src = dataUrl;
-      });
-
+      // Read file into data URL and send the original image (no upscaling).
       const dataUrl = await toDataURL(imageFile);
-      let sendDataUrl = dataUrl;
-      try {
-        sendDataUrl = await resizeDataUrl(dataUrl, { maxWidth: 2000, scaleFactor: 2, quality: 0.92 });
-      } catch (re) {
-        console.warn('image resize failed, sending original', re);
-        sendDataUrl = dataUrl;
-      }
-
-      // Helper to POST image data to /api/analyze and parse JSON safely
-      const postAnalyze = async (imageDataUrl) => {
-        try {
-          const r = await fetch(`${API}/analyze`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: imageDataUrl }) });
-          let j = null;
-          try { j = await r.json(); } catch (e) { j = null; }
-          return { ok: r.ok, status: r.status, statusText: r.statusText, body: j };
-        } catch (e) {
-          return { ok: false, error: String(e) };
-        }
-      };
-
-      // Try the resized image first, then one smaller upscale, then the original as a last resort.
-      let attemptOrder = [ { label: 'upscaled', data: sendDataUrl } ];
-      // add a gentler upscale attempt
-      try {
-        const gentler = await resizeDataUrl(dataUrl, { maxWidth: 1600, scaleFactor: 1.3, quality: 0.88 });
-        attemptOrder.push({ label: 'gentler-upscale', data: gentler });
-      } catch (e) {
-        // ignore
-      }
-      attemptOrder.push({ label: 'original', data: dataUrl });
-
-      let finalData = null;
-      let attemptSummary = [];
-      for (const att of attemptOrder) {
-        setMsg(`Analyzing image (${att.label})...`);
-        const r = await postAnalyze(att.data);
-        attemptSummary.push({ label: att.label, ok: r.ok, status: r.status });
-        if (!r.ok) {
-          // try next
-          continue;
-        }
-        const d = r.body || {};
-        const notes = String(d.notes || '').trim();
-        const anyKey = d.dojReportNumber || d.incidentId || d.leadingId || d.chargesRemoved || d.chargesReplaced || (notes && notes.length > 20);
-        if (anyKey) { finalData = d; break; }
-        // otherwise, treat as empty and try next
-      }
-
+      const res = await fetch(`${API}/analyze`, { method:'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ image: dataUrl }) });
+      let data;
+      try { data = await res.json(); } catch (pj) { data = null; }
       setAnalyzing(false);
-      if (!finalData) {
-        setMsg('Analysis completed but no usable text was extracted. Try a clearer image or smaller resize.');
-        return;
-      }
-
-      const data = finalData;
+      if (!res.ok) { setMsg(data?.error || `Analysis failed: ${res.status} ${res.statusText}`); return; }
       // Map known fields from analysis to form keys. setValues accepts partial updates.
       const mapped = {};
       if (data.dojReportNumber) mapped.dojReportNumber = String(data.dojReportNumber).slice(0,6);
