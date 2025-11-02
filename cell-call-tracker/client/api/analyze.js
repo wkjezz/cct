@@ -84,87 +84,9 @@ function heuristicsFromText(text) {
   };
 }
 
-export default async function handler(req, res) {
-  try {
-    // CORS for same-origin usage
-    res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    if (req.method === 'OPTIONS') return res.status(200).end();
-
-    if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' });
-
-    // parse body (Vercel may supply string or parsed object)
-    const body = (() => {
-      try { return typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {}); } catch { return {}; }
-    })();
-    const dataUrl = body.image;
-    if (!dataUrl) return res.status(400).json({ error: 'image required' });
-
-    const parsed = parseDataUrl(dataUrl);
-    if (!parsed) return res.status(400).json({ error: 'invalid image data' });
-
-    const apiKey = process.env.OCR_SPACE_API_KEY;
-    let text = '';
-
-    if (apiKey) {
-      const params = new URLSearchParams();
-      params.append('apikey', apiKey);
-      params.append('base64Image', `data:${parsed.mime};base64,${parsed.base64}`);
-      params.append('language', 'eng');
-      params.append('isOverlayRequired', 'false');
-
-      try {
-        const r = await fetchMaybe('https://api.ocr.space/parse/image', { method: 'POST', body: params });
-        const status = r.status;
-        // attempt JSON parse, but fall back to text for diagnostics
-        let j = null;
-        try { j = await r.json(); } catch (pj) {
-          const txt = await r.text().catch(() => '<unreadable body>');
-          console.error('ocr.space returned non-json', { status, body: txt });
-          return res.status(502).json({ error: 'ocr.space returned non-json', status, body: txt });
-        }
-
-        if (!r.ok) {
-          console.error('ocr.space returned error', { status, body: j });
-          return res.status(502).json({ error: 'ocr.space returned error', status, body: j });
-        }
-
-        if (!j || !j.ParsedResults || !j.ParsedResults[0]) {
-          console.error('ocr.space no parsed results', j);
-          return res.status(502).json({ error: 'ocr.space parse failed', status, raw: j });
-        }
-
-        text = j.ParsedResults.map(p => p.ParsedText).join('\n');
-      } catch (fetchErr) {
-        console.error('ocr.space fetch error', fetchErr);
-        return res.status(502).json({ error: 'ocr.space fetch error', details: String(fetchErr) });
-      }
-    } else {
-      console.error('OCR_SPACE_API_KEY not configured in environment');
-      return res.status(500).json({ error: 'OCR_SPACE_API_KEY not configured on server' });
-    }
-
-    const out = heuristicsFromText(text);
-
-    // Attempt to match leading attorney by first name against client/data/staff.json
-    try {
-      const staffPath = path.join(process.cwd(), 'data', 'staff.json');
-      if (fs.existsSync(staffPath)) {
-        const staff = JSON.parse(fs.readFileSync(staffPath, 'utf-8')) || [];
-        for (const s of staff) {
-          if (!s || !s.name) continue;
-          const first = String(s.name).split(' ')[0];
-          if (first && text.toLowerCase().includes(first.toLowerCase())) { out.leadingId = s.id; break; }
-        }
-      }
-    } catch (e) {
-      // non-fatal
-      console.error('staff match error', e);
-    }
-
-    return res.json(out);
-  } catch (err) {
-    console.error('analyze function error', err);
-    return res.status(500).json({ error: 'analysis failed', details: String(err) });
-  }
+export default async function handler(_req, res) {
+  // Smart fill feature is currently disabled. Keep the function present but respond with 410
+  // so it can be re-enabled later without removing code.
+  res.setHeader('Content-Type', 'application/json');
+  return res.status(410).json({ ok: false, disabled: true, reason: 'Smart fill (OCR) feature is disabled' });
 }
