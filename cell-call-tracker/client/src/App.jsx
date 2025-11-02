@@ -96,10 +96,8 @@ export default function App(){
       {view==='analytics' && <Analytics user={effectiveUser} />}
       {view==='performance' && <Performance />}
   {view==='smart' && ENABLE_SMART && <SmartView user={effectiveUser} onSaved={()=>console.log('saved')} setView={setView} />}
-      <footer className="card" style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 20px',marginTop:18}}>
-        <div style={{fontWeight:700}}>Cell Call Tracker</div>
+      <footer className="card" style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'12px 20px',marginTop:18,background:'var(--accent)',borderColor:'var(--border)',color:'var(--text-light)'}}>
         <div style={{textAlign:'center',color:'var(--text-light)',fontSize:12}}>Cell Call Tracker by MAICHO / Colin Burns</div>
-        <div />
       </footer>
     </div>
   )
