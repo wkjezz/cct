@@ -83,12 +83,53 @@ export default function SmartView({ user, onSaved, setView }){
         sendDataUrl = dataUrl;
       }
 
-      const res = await fetch(`${API}/analyze`, { method:'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ image: sendDataUrl }) });
-      let data;
-      try { data = await res.json(); } catch (pj) { data = null; }
-      setAnalyzing(false);
-      if (!res.ok) { setMsg(data?.error || `Analysis failed: ${res.status} ${res.statusText}`); return; }
+      // Helper to POST image data to /api/analyze and parse JSON safely
+      const postAnalyze = async (imageDataUrl) => {
+        try {
+          const r = await fetch(`${API}/analyze`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: imageDataUrl }) });
+          let j = null;
+          try { j = await r.json(); } catch (e) { j = null; }
+          return { ok: r.ok, status: r.status, statusText: r.statusText, body: j };
+        } catch (e) {
+          return { ok: false, error: String(e) };
+        }
+      };
 
+      // Try the resized image first, then one smaller upscale, then the original as a last resort.
+      let attemptOrder = [ { label: 'upscaled', data: sendDataUrl } ];
+      // add a gentler upscale attempt
+      try {
+        const gentler = await resizeDataUrl(dataUrl, { maxWidth: 1600, scaleFactor: 1.3, quality: 0.88 });
+        attemptOrder.push({ label: 'gentler-upscale', data: gentler });
+      } catch (e) {
+        // ignore
+      }
+      attemptOrder.push({ label: 'original', data: dataUrl });
+
+      let finalData = null;
+      let attemptSummary = [];
+      for (const att of attemptOrder) {
+        setMsg(`Analyzing image (${att.label})...`);
+        const r = await postAnalyze(att.data);
+        attemptSummary.push({ label: att.label, ok: r.ok, status: r.status });
+        if (!r.ok) {
+          // try next
+          continue;
+        }
+        const d = r.body || {};
+        const notes = String(d.notes || '').trim();
+        const anyKey = d.dojReportNumber || d.incidentId || d.leadingId || d.chargesRemoved || d.chargesReplaced || (notes && notes.length > 20);
+        if (anyKey) { finalData = d; break; }
+        // otherwise, treat as empty and try next
+      }
+
+      setAnalyzing(false);
+      if (!finalData) {
+        setMsg('Analysis completed but no usable text was extracted. Try a clearer image or smaller resize.');
+        return;
+      }
+
+      const data = finalData;
       // Map known fields from analysis to form keys. setValues accepts partial updates.
       const mapped = {};
       if (data.dojReportNumber) mapped.dojReportNumber = String(data.dojReportNumber).slice(0,6);
