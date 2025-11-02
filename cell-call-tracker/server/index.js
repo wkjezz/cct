@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { nanoid } from 'nanoid';
+import fetch from 'node-fetch';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -111,22 +112,90 @@ app.get('/api/records', (req, res) => {
   res.json(rows);
 });
 
-// Simple image analysis mock endpoint. Accepts JSON { image: dataUrl }
-app.post('/api/analyze', express.json(), (req, res) => {
+// OCR worker - lazy init and reuse
+let _worker = null;
+async function getWorker(){
+  if (_worker) return _worker;
+  // dynamically import tesseract only when needed (avoids WASM load at server start)
+  const { createWorker } = await import('tesseract.js');
+  const worker = createWorker({ logger: m => {/* optional logging */} });
+  await worker.load();
+  await worker.loadLanguage('eng');
+  await worker.initialize('eng');
+  _worker = worker;
+  return _worker;
+}
+
+// Real image analysis endpoint: accepts JSON { image: dataUrl }
+app.post('/api/analyze', express.json({ limit: '12mb' }), async (req, res) => {
   const body = req.body || {};
-  const img = body.image || '';
-  if (!img) return res.status(400).json({ error: 'image required' });
+  const dataUrl = body.image || '';
+  if (!dataUrl) return res.status(400).json({ error: 'image required' });
 
-  // Minimal mock parsing: return fixed example values and attempt to pick a leadingId from staff
-  const staff = readJson(STAFF_FILE, []);
-  const leadingId = staff.length ? staff[0].id : null;
+  try {
+    // parse data URL
+    const m = dataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
+    if (!m) return res.status(400).json({ error: 'invalid image data' });
+    const mime = m[1];
+    const base64 = m[2];
 
-  // Example deterministic mock: use timestamp digits for DOJ/incident to vary per request
-  const ts = Date.now().toString();
-  const doj = ts.slice(-6);
-  const inc = ts.slice(-12,-6) || '000000';
+    const apiKey = process.env.OCR_SPACE_API_KEY;
+    let text = '';
 
-  return res.json({ dojReportNumber: doj, incidentId: inc, date: new Date().toISOString().slice(0,10), leadingId, notes: 'Mock analysis — please verify.' });
+    if (apiKey) {
+      // Use OCR.space API (proxy) when API key is configured
+      const params = new URLSearchParams();
+      // OCR.space expects the data URL form 'data:image/...;base64,...'
+      params.append('apikey', apiKey);
+      params.append('base64Image', `data:${mime};base64,${base64}`);
+      params.append('language', 'eng');
+      params.append('isOverlayRequired', 'false');
+
+      const r = await fetch('https://api.ocr.space/parse/image', { method: 'POST', body: params });
+      const j = await r.json();
+      if (!j || !j.ParsedResults || !j.ParsedResults[0]) {
+        console.error('ocr.space no parsed results', j);
+        return res.status(500).json({ error: 'ocr failed', raw: j });
+      }
+      text = j.ParsedResults.map(p => p.ParsedText).join('\n');
+    } else {
+      // Fallback: local tesseract worker (if OCR_SPACE_API_KEY not set)
+      const buffer = Buffer.from(base64, 'base64');
+      const worker = await getWorker();
+      const result = await worker.recognize(buffer);
+      text = (result && result.data && result.data.text) ? result.data.text : '';
+    }
+
+    // heuristics: find 6-digit DOJ and 6-digit incident ID, date formats, and leading attorney by name
+    const dojMatch = text.match(/\b\d{6}\b/);
+    const doj = dojMatch ? dojMatch[0] : null;
+    const incMatch = text.match(/\b[A-Z0-9]{6}\b/i);
+    const incident = incMatch ? incMatch[0] : null;
+
+    // date: look for ISO yyyy-mm-dd or mm/dd/yyyy
+    let dateMatch = text.match(/\b\d{4}-\d{2}-\d{2}\b/);
+    if (!dateMatch) dateMatch = text.match(/\b\d{1,2}\/\d{1,2}\/\d{4}\b/);
+    let date = dateMatch ? dateMatch[0] : new Date().toISOString().slice(0,10);
+    if (date && date.includes('/')) {
+      // normalize mm/dd/yyyy -> yyyy-mm-dd
+      const parts = date.split('/').map(p=>p.padStart(2,'0'));
+      if (parts.length === 3) date = `${parts[2]}-${parts[0]}-${parts[1]}`;
+    }
+
+    const staff = readJson(STAFF_FILE, []);
+    let leadingId = null;
+    for (const s of staff){
+      if (!s || !s.name) continue;
+      const name = String(s.name).split(' ')[0];
+      if (name && text.toLowerCase().includes(name.toLowerCase())){ leadingId = s.id; break; }
+    }
+
+    // return extracted text as notes plus parsed fields
+    return res.json({ dojReportNumber: doj, incidentId: incident, date, leadingId, notes: String(text).slice(0,2000) });
+  } catch (err) {
+    console.error('analyze error', err);
+    return res.status(500).json({ error: 'analysis failed', details: String(err) });
+  }
 });
 
 // Delete record by ID

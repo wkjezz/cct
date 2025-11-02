@@ -11,5 +11,7 @@
     "express": "^4.19.2",
     "express-session": "^1.17.3",
     "nanoid": "^5.0.7"
+    ,"tesseract.js": "^2.1.5",
+    "node-fetch": "^3.3.1"
   }
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState, forwardRef, useImperativeHandle } from 'react'
 import admins from '../../data/admins.json'
 import AddSelect from './AddSelect'
 import { getJSON, API, toLocalMidnightISO, todayYMD } from '../lib/utils'
@@ -7,7 +7,7 @@ function Label({children}){ return <div className="label">{children}</div> }
 function Row({children}){ return <div className="row">{children}</div> }
 function Divider(){ return <div className="section-sep" /> }
 
-export default function Form({ user, onSaved }){
+const Form = forwardRef(function Form({ user, onSaved }, ref){
   // hide the form UI for non-admins
   if (!user || !user.admin) return null;
   const [staff, setStaff] = useState([]);
@@ -58,6 +58,10 @@ export default function Form({ user, onSaved }){
     by: 'dev-ui'
   });
   const [form,setForm] = useState(init());
+  // expose imperative API to allow parents (e.g. SmartView) to pre-fill fields
+  useImperativeHandle(ref, () => ({
+    setValues: (updates) => setForm(f => ({ ...f, ...updates }))
+  }), []);
   const upd=(k,v)=>setForm(f=>({...f,[k]:v}));
   const six=s=>String(s).slice(0,6);
   const hardClear=()=>{setForm(init());setMsg('');setFormKey(k=>k+1)};
@@ -294,4 +298,6 @@ export default function Form({ user, onSaved }){
     </div>
     {msg && <div style={{marginTop:10,color:'var(--text-light)'}}>{msg}</div>}
   </form>);
-}
+});
+
+export default Form;
