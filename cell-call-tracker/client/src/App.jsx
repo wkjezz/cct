@@ -19,6 +19,8 @@ function Divider(){ return <div className="section-sep" /> }
 
 /* ========== APP SHELL ========== */
 export default function App(){
+  // Feature flags
+  const ENABLE_SMART = false; // toggle to show Smart Report (keep code present but hidden)
   const [view,setView]=useState('landing');
   const [status,setStatus]=useState('Checking API...');
   const [staffCount,setStaffCount]=useState(0);
@@ -93,7 +95,7 @@ export default function App(){
   {view==='form-manual' && <FormManual user={effectiveUser} onSaved={()=>console.log('saved')} />}
       {view==='analytics' && <Analytics user={effectiveUser} />}
       {view==='performance' && <Performance />}
-  {view==='smart' && <SmartView user={effectiveUser} onSaved={()=>console.log('saved')} setView={setView} />}
+  {view==='smart' && ENABLE_SMART && <SmartView user={effectiveUser} onSaved={()=>console.log('saved')} setView={setView} />}
     </div>
   )
 }
