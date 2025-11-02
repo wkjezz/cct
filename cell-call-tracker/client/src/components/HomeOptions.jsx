@@ -25,6 +25,11 @@ export default function HomeOptions({ effectiveUser, setView, staffCount, enable
         <p style={{marginTop:8, fontSize:14, color:'var(--text)', textAlign:'center'}}>View counts and filters.</p>
       </div>
 
+      <div className="card" style={{flex:1, textAlign:'center', cursor:'pointer', display:'flex', flexDirection:'column', justifyContent:'flex-start', alignItems:'center', paddingTop:16}} onClick={()=>setView('performance')}>
+        <h2 style={{margin:0, fontSize:20, fontWeight:700, color:'var(--text-light)', textAlign:'center'}}>Performance</h2>
+        <p style={{marginTop:8, fontSize:14, color:'var(--text)', textAlign:'center'}}>View staff performance and metrics.</p>
+      </div>
+
       {/* Quick Stats removed per request - card omitted */}
 
     </div>
