@@ -80,7 +80,7 @@ export default function App(){
   }
 
   return (
-    <div style={{maxWidth:1100,margin:'24px auto'}}>
+  <div style={{maxWidth:1100,margin:'24px auto'}}>
   <Header effectiveUser={effectiveUser} user={user} setView={setView} enableSmart={ENABLE_SMART} />
 
       {view==='landing' && (
@@ -96,6 +96,9 @@ export default function App(){
       {view==='analytics' && <Analytics user={effectiveUser} />}
       {view==='performance' && <Performance />}
   {view==='smart' && ENABLE_SMART && <SmartView user={effectiveUser} onSaved={()=>console.log('saved')} setView={setView} />}
+      <footer style={{textAlign:'center',marginTop:18,color:'var(--text-light)',fontSize:12}}>
+        MAICHO / Colin Burns
+      </footer>
     </div>
   )
 }

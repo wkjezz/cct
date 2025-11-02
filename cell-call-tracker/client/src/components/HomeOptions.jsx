@@ -11,12 +11,7 @@ export default function HomeOptions({ effectiveUser, setView, staffCount, enable
         </div>
       )}
 
-      {effectiveUser?.admin && (
-        <div className="card" style={{flex:1, textAlign:'center', cursor:'pointer', display:'flex', flexDirection:'column', justifyContent:'flex-start', alignItems:'center', paddingTop:16}} onClick={()=>setView('form-manual')}>
-          <h2 style={{margin:0, fontSize:20, fontWeight:700, color:'var(--text-light)', textAlign:'center'}}>Manual Report</h2>
-          <p style={{marginTop:8, fontSize:14, color:'var(--text)', textAlign:'center'}}>Paste an image of a report and analyze to pre-fill fields.</p>
-        </div>
-      )}
+      {/* Manual Report card removed while feature is shelved */}
 
       {effectiveUser?.admin && enableSmart && (
         <div className="card" style={{flex:1, textAlign:'center', cursor:'pointer', display:'flex', flexDirection:'column', justifyContent:'flex-start', alignItems:'center', paddingTop:16}} onClick={()=>setView('smart')}>
