@@ -5,6 +5,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { nanoid } from 'nanoid';
 import fetch from 'node-fetch';
+import os from 'os';
+import { execFile } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -159,11 +161,30 @@ app.post('/api/analyze', express.json({ limit: '12mb' }), async (req, res) => {
       }
       text = j.ParsedResults.map(p => p.ParsedText).join('\n');
     } else {
-      // Fallback: local tesseract worker (if OCR_SPACE_API_KEY not set)
+      // Prefer system tesseract CLI if available (writes a temp file and calls tesseract)
       const buffer = Buffer.from(base64, 'base64');
-      const worker = await getWorker();
-      const result = await worker.recognize(buffer);
-      text = (result && result.data && result.data.text) ? result.data.text : '';
+      const tmpPath = path.join(os.tmpdir(), `cct-ocr-${Date.now()}-${Math.random().toString(36).slice(2,8)}.png`);
+      try {
+        fs.writeFileSync(tmpPath, buffer);
+        try {
+          // execFile will reject if tesseract is not found or fails
+          const stdout = await new Promise((resolve, reject) => {
+            execFile('tesseract', [tmpPath, 'stdout', '-l', 'eng'], { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+              if (err) return reject(err);
+              resolve(stdout);
+            });
+          });
+          text = String(stdout || '');
+        } catch (cliErr) {
+          // If system tesseract isn't available or fails, fall back to tesseract.js worker
+          console.warn('system tesseract failed, falling back to tesseract.js:', String(cliErr));
+          const worker = await getWorker();
+          const result = await worker.recognize(buffer);
+          text = (result && result.data && result.data.text) ? result.data.text : '';
+        }
+      } finally {
+        try { fs.unlinkSync(tmpPath); } catch (e) { /* ignore */ }
+      }
     }
 
     // heuristics: find 6-digit DOJ and 6-digit incident ID, date formats, and leading attorney by name
