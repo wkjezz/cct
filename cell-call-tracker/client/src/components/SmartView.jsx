@@ -46,8 +46,44 @@ export default function SmartView({ user, onSaved, setView }){
         reader.onerror = rej;
         reader.readAsDataURL(file);
       });
+
+      // Resize / upscale small images before sending to OCR to improve small-text recognition.
+      const resizeDataUrl = (dataUrl, { maxWidth = 2000, scaleFactor = 2, quality = 0.92 } = {}) => new Promise((res, rej) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const origW = img.naturalWidth || img.width;
+            const origH = img.naturalHeight || img.height;
+            // target width: the larger of origW * scaleFactor or maxWidth, but don't shrink
+            const targetW = Math.max(Math.min(maxWidth, Math.max(origW * scaleFactor, origW)), origW);
+            const targetH = Math.round((origH * targetW) / origW);
+            const canvas = document.createElement('canvas');
+            canvas.width = targetW;
+            canvas.height = targetH;
+            const ctx = canvas.getContext('2d');
+            // fill with white for JPEG backgrounds
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            // prefer JPEG to reduce size and improve OCR in many cases
+            const out = canvas.toDataURL('image/jpeg', quality);
+            res(out);
+          } catch (e) { rej(e); }
+        };
+        img.onerror = (e) => rej(new Error('failed to load image for resize'));
+        img.src = dataUrl;
+      });
+
       const dataUrl = await toDataURL(imageFile);
-      const res = await fetch(`${API}/analyze`, { method:'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ image: dataUrl }) });
+      let sendDataUrl = dataUrl;
+      try {
+        sendDataUrl = await resizeDataUrl(dataUrl, { maxWidth: 2000, scaleFactor: 2, quality: 0.92 });
+      } catch (re) {
+        console.warn('image resize failed, sending original', re);
+        sendDataUrl = dataUrl;
+      }
+
+      const res = await fetch(`${API}/analyze`, { method:'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ image: sendDataUrl }) });
       let data;
       try { data = await res.json(); } catch (pj) { data = null; }
       setAnalyzing(false);
