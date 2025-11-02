@@ -1,8 +1,8 @@
 // Vercel serverless function under the client project so /api/analyze exists in the deployed frontend.
 // Proxies base64 images to OCR.space using OCR_SPACE_API_KEY env var and returns parsed fields.
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 const fetchMaybe = async (...args) => {
   if (typeof fetch === 'function') return fetch(...args);
@@ -33,7 +33,7 @@ function heuristicsFromText(text) {
   return { dojReportNumber: doj, incidentId: incident, date, notes: String(text).slice(0,2000) };
 }
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
     // CORS for same-origin usage
     res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
@@ -97,7 +97,7 @@ module.exports = async (req, res) => {
 
     // Attempt to match leading attorney by first name against client/data/staff.json
     try {
-      const staffPath = path.join(__dirname, '..', 'data', 'staff.json');
+      const staffPath = path.join(process.cwd(), 'data', 'staff.json');
       if (fs.existsSync(staffPath)) {
         const staff = JSON.parse(fs.readFileSync(staffPath, 'utf-8')) || [];
         for (const s of staff) {
@@ -116,4 +116,4 @@ module.exports = async (req, res) => {
     console.error('analyze function error', err);
     return res.status(500).json({ error: 'analysis failed', details: String(err) });
   }
-};
+}
