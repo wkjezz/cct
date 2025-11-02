@@ -81,11 +81,11 @@ export default function App(){
 
   return (
     <div style={{maxWidth:1100,margin:'24px auto'}}>
-      <Header effectiveUser={effectiveUser} user={user} setView={setView} />
+  <Header effectiveUser={effectiveUser} user={user} setView={setView} enableSmart={ENABLE_SMART} />
 
       {view==='landing' && (
         <div style={{display:'flex',flexDirection:'column',gap:16,marginTop:16}}>
-          <HomeOptions effectiveUser={effectiveUser} setView={setView} staffCount={staffCount} />
+          <HomeOptions effectiveUser={effectiveUser} setView={setView} staffCount={staffCount} enableSmart={ENABLE_SMART} />
 
           <LastLogged />
         </div>

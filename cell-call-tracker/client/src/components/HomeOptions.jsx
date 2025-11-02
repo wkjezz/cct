@@ -1,7 +1,7 @@
 import React from 'react'
 import AiLogo from './AiLogo'
 
-export default function HomeOptions({ effectiveUser, setView, staffCount }){
+export default function HomeOptions({ effectiveUser, setView, staffCount, enableSmart = false }){
   return (
     <div className="home-options" style={{display:'flex',gap:16}}>
       {effectiveUser?.admin && (
@@ -18,7 +18,7 @@ export default function HomeOptions({ effectiveUser, setView, staffCount }){
         </div>
       )}
 
-      {effectiveUser?.admin && (
+      {effectiveUser?.admin && enableSmart && (
         <div className="card" style={{flex:1, textAlign:'center', cursor:'pointer', display:'flex', flexDirection:'column', justifyContent:'flex-start', alignItems:'center', paddingTop:16}} onClick={()=>setView('smart')}>
           <h2 style={{margin:0, fontSize:20, fontWeight:700, color:'var(--text-light)', display:'flex', alignItems:'center', gap:8}}><AiLogo size={20} style={{marginRight:8}}/> Smart Report</h2>
           <p style={{marginTop:8, fontSize:14, color:'var(--text)', textAlign:'center'}}>AI-assisted extraction (BETA). Auto-filled fields must be manually verified before submission.</p>
