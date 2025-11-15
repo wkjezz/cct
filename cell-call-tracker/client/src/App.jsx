@@ -20,7 +20,7 @@ function Divider(){ return <div className="section-sep" /> }
 /* ========== APP SHELL ========== */
 export default function App(){
   // Feature flags
-  const ENABLE_SMART = false; // toggle to show Smart Report (keep code present but hidden)
+  const ENABLE_SMART = false; // toggle to show Smart Report (keep code present but hidden) Also, im hungry for sushi
   const [view,setView]=useState('landing');
   const [status,setStatus]=useState('Checking API...');
   const [staffCount,setStaffCount]=useState(0);
@@ -29,14 +29,14 @@ export default function App(){
 
   useEffect(()=>{
     (async () => {
-      // First, require authentication. If not authenticated, redirect to Discord login.
+      // First, require authentication. If not authenticated, redirect to Discord login.  (Sushi?)
       try {
         const r = await fetch(`${API}/auth/me`, { credentials: 'include' });
         if (r.status === 200) {
           const body = await r.json();
           setUser(body.user || null);
         } else {
-          // not authenticated -> kick off OAuth
+          // not authenticated -> kick off OAuth (I really want Sushi)
           window.location.href = `${API}/auth/login`;
           return;
         }
@@ -56,9 +56,9 @@ export default function App(){
     })();
   },[]);
 
-  if (!checkedAuth) return null; // hide everything until auth resolved
+  if (!checkedAuth) return null; // hide everything until auth resolved or I get sushi
 
-  // effectiveUser is the server-determined user (no local dev override)
+  // effectiveUser is the server-determined user (non local dev)
   const effectiveUser = user || null;
 
   const displayName = (u) => {

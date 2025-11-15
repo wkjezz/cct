@@ -82,8 +82,6 @@ app.post('/api/records', (req, res) => {
     benchVerdictNumber: b.verdict === 'BENCH_REQUEST' ? (b.benchVerdictNumber || null) : null,
     chargesRemoved: !!b.chargesRemoved,
     chargesReplaced: !!b.chargesRemoved && !!b.chargesReplaced,
-    fine: b.fine === null || b.fine === '' || b.fine === undefined ? null : Number(b.fine),
-    sentenceMonths: b.sentenceMonths === null || b.sentenceMonths === '' || b.sentenceMonths === undefined ? null : Number(b.sentenceMonths),
     cellCallType: b.cellCallType,
     notes: b.notes || '',
     loggedBy: b.by || 'TEMP_NO_AUTH'

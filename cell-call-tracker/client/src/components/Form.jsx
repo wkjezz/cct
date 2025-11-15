@@ -54,8 +54,6 @@ const Form = forwardRef(function Form({ user, onSaved }, ref){
     benchVerdictNumber: '',
     chargesRemoved: 'no',
     chargesReplaced: 'no',
-    fine: '',
-    sentenceMonths: '',
     cellCallType: 'CELL_CALL',
     notes: '',
     by: 'dev-ui'
@@ -111,8 +109,6 @@ const Form = forwardRef(function Form({ user, onSaved }, ref){
       benchVerdictNumber: form.verdict==='BENCH_REQUEST' ? form.benchVerdictNumber : null,
       chargesRemoved: form.chargesRemoved === 'yes',
       chargesReplaced: form.chargesRemoved === 'yes' && form.chargesReplaced === 'yes',
-      fine: form.fine === '' ? null : Number(form.fine),
-      sentenceMonths: form.sentenceMonths === '' ? null : Number(form.sentenceMonths),
       cellCallType: form.cellCallType,
       notes: form.notes,
       by: form.by
@@ -274,15 +270,7 @@ const Form = forwardRef(function Form({ user, onSaved }, ref){
       }
     </Row>
 
-    {/* Row 7: Fine | Sentence */}
-    <Row>
-      <label className="field"><Label>Fine ($)</Label>
-        <input type="number" value={form.fine} onChange={e=>upd('fine',e.target.value)}/>
-      </label>
-      <label className="field"><Label>Sentence (months)</Label>
-        <input type="number" value={form.sentenceMonths} onChange={e=>upd('sentenceMonths',e.target.value)}/>
-      </label>
-    </Row>
+    {/* Fine and Sentence fields removed */}
 
     <Divider />
 

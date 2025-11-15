@@ -40,8 +40,6 @@ export default async function handler(req, res){
         incidentId: body.incidentId !== undefined ? String(body.incidentId) : existing.incidentId,
         dojReportNumber: body.dojReportNumber !== undefined ? String(body.dojReportNumber) : existing.dojReportNumber,
         leadingId: body.leadingId !== undefined ? Number(body.leadingId) : existing.leadingId,
-        fine: body.fine === '' ? null : (body.fine !== undefined ? Number(body.fine) : existing.fine),
-        sentenceMonths: body.sentenceMonths === '' ? null : (body.sentenceMonths !== undefined ? Number(body.sentenceMonths) : existing.sentenceMonths),
       }
 
       if(next.dojReportNumber !== existing.dojReportNumber){

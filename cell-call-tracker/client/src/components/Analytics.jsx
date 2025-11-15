@@ -101,8 +101,9 @@ export default function Analytics({ user }){
       ? observedSourceFiltered.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.map(String).includes(String(activeStaffId))) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.map(String).includes(String(activeStaffId)))).length
       : observedSourceFiltered.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.length>0) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.length>0)).length;
 
-    const totalFine=rows.reduce((s,r)=>s+(Number(r.fine)||0),0);
-    const totalMonths=rows.reduce((s,r)=>s+(Number(r.sentenceMonths)||0),0);
+    // fine and sentenceMonths removed from dataset; don't compute these KPIs
+    const totalFine = 0;
+    const totalMonths = 0;
     const byType=rows.reduce((m,r)=>((m[r.cellCallType]=(m[r.cellCallType]||0)+1),m),{});
     const supervisionCount = activeStaffId
       ? rows.filter(r => Array.isArray(r.supervising) && r.supervising.map(String).includes(String(activeStaffId))).length
@@ -129,13 +130,12 @@ export default function Analytics({ user }){
     lines.push(`**Charges Removed:** ${kpi.chargesRemoved}`);
     lines.push(`**Charges Replaced:** ${kpi.chargesReplaced}`);
     lines.push(`**Bench Requests:** ${kpi.bench}`);
-    lines.push(`**Total Fine:** $${kpi.totalFine}`);
-    lines.push(`**Total Sentence Months:** ${kpi.totalMonths}`);
+    // fine and sentenceMonths omitted from report
     lines.push(`\n### Breakdown`);
-    lines.push(`| Date | Incident | DOJ# | Lead | Verdict | Fine | Sentence | Type |`);
-    lines.push(`|------|-----------|------|------|----------|------|-----------|------|`);
+    lines.push(`| Date | Incident | DOJ# | Lead | Verdict | Type |`);
+    lines.push(`|------|-----------|------|------|----------|------|`);
     for(const r of rows){
-      lines.push(`| ${fmtDateUS(r.date||r.createdAt)} | ${r.incidentId} | ${r.dojReportNumber} | ${staffMap[String(r.leadingId)]?.name||r.leadingId} | ${r.verdict} | ${r.fine??'-'} | ${r.sentenceMonths??'-'} | ${r.cellCallType} |`);
+      lines.push(`| ${fmtDateUS(r.date||r.createdAt)} | ${r.incidentId} | ${r.dojReportNumber} | ${staffMap[String(r.leadingId)]?.name||r.leadingId} | ${r.verdict} | ${r.cellCallType} |`);
     }
     await navigator.clipboard.writeText(lines.join('\n'));
     setCopied(true); setTimeout(()=>setCopied(false),2000);
@@ -181,8 +181,7 @@ export default function Analytics({ user }){
       <div className="card"><h3>Cell Calls Observed</h3><p style={{fontSize:28,margin:0}}>{kpi.observedCount}</p></div>
       <div className="card"><h3>Not Guilty Pleas</h3><p style={{fontSize:28,margin:0}}>{kpi.notGuilty}</p></div>
       <div className="card"><h3>Bench Trial Requests</h3><p style={{fontSize:28,margin:0}}>{kpi.bench}</p></div>
-      <div className="card"><h3>Total Fine</h3><p style={{fontSize:28,margin:0}}>${kpi.totalFine}</p></div>
-      <div className="card"><h3>Total Sentence (months)</h3><p style={{fontSize:28,margin:0}}>{kpi.totalMonths}</p></div>
+      {/* Fine and Sentence KPIs removed */}
     </div>
 
     <div className="row" style={{marginTop:12}}>
@@ -207,8 +206,7 @@ export default function Analytics({ user }){
                   <th style={{position:'sticky',top:0,background:'var(--card)'}}>Verdict</th>
                   <th style={{position:'sticky',top:0,background:'var(--card)'}}>Charges Removed?</th>
                   <th style={{position:'sticky',top:0,background:'var(--card)'}}>Charges Replaced?</th>
-                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>Fine</th>
-                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>Sentence</th>
+                  {/* Fine & Sentence columns removed */}
                   <th style={{position:'sticky',top:0,background:'var(--card)'}}>Type</th>
                   <th style={{position:'sticky',top:0,background:'var(--card)'}}></th>
                 </tr>
@@ -223,8 +221,7 @@ export default function Analytics({ user }){
                     <td>{r.verdict}</td>
                     <td>{r.chargesRemoved ? 'Yes' : 'No'}</td>
                     <td>{r.chargesRemoved ? (r.chargesReplaced ? 'Yes' : 'No') : 'N/A'}</td>
-                    <td>{r.fine ?? '-'}</td>
-                    <td>{r.sentenceMonths ?? '-'}</td>
+                    {/* Fine & Sentence cells removed */}
                     <td>{r.cellCallType}</td>
                     <td>
                       {user?.admin ? (

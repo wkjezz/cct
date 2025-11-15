@@ -56,8 +56,6 @@ export default function FormManual({ user, onSaved }){
     benchVerdictNumber: '',
     chargesRemoved: 'no',
     chargesReplaced: 'no',
-    fine: '',
-    sentenceMonths: '',
     cellCallType: 'CELL_CALL',
     notes: '',
     by: 'dev-ui'
@@ -141,8 +139,6 @@ export default function FormManual({ user, onSaved }){
       benchVerdictNumber: form.verdict==='BENCH_REQUEST' ? form.benchVerdictNumber : null,
       chargesRemoved: form.chargesRemoved === 'yes',
       chargesReplaced: form.chargesRemoved === 'yes' && form.chargesReplaced === 'yes',
-      fine: form.fine === '' ? null : Number(form.fine),
-      sentenceMonths: form.sentenceMonths === '' ? null : Number(form.sentenceMonths),
       cellCallType: form.cellCallType,
       notes: form.notes,
       by: form.by

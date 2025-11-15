@@ -162,9 +162,6 @@ export default async function handler(req, res) {
         chargesRemoved: !!body.chargesRemoved,
         chargesReplaced: !!body.chargesRemoved && !!body.chargesReplaced,
 
-        fine: body.fine === null || body.fine === '' || body.fine === undefined ? null : Number(body.fine),
-        sentenceMonths: body.sentenceMonths === null || body.sentenceMonths === '' || body.sentenceMonths === undefined ? null : Number(body.sentenceMonths),
-
         cellCallType: body.cellCallType,
         notes: body.notes || '',
         by: body.by || body.loggedBy || 'web',
@@ -208,8 +205,7 @@ export default async function handler(req, res) {
         incidentId: body.incidentId !== undefined ? String(body.incidentId) : existing.incidentId,
         dojReportNumber: body.dojReportNumber !== undefined ? String(body.dojReportNumber) : existing.dojReportNumber,
         leadingId: body.leadingId !== undefined ? Number(body.leadingId) : existing.leadingId,
-        fine: body.fine === '' ? null : (body.fine !== undefined ? Number(body.fine) : existing.fine),
-        sentenceMonths: body.sentenceMonths === '' ? null : (body.sentenceMonths !== undefined ? Number(body.sentenceMonths) : existing.sentenceMonths),
+        // fine and sentenceMonths removed
       };
 
       // if DOJ changed, update the mapping

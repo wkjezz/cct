@@ -40,9 +40,6 @@ export default async function handler(req, res) {
         chargesRemoved: b.chargesRemoved !== undefined ? !!b.chargesRemoved : !!existing?.chargesRemoved,
         chargesReplaced: b.chargesReplaced !== undefined ? !!b.chargesReplaced : !!existing?.chargesReplaced,
 
-        fine: b.fine === undefined ? existing?.fine : (b.fine === null || b.fine === '' ? null : Number(b.fine)),
-        sentenceMonths: b.sentenceMonths === undefined ? existing?.sentenceMonths : (b.sentenceMonths === null || b.sentenceMonths === '' ? null : Number(b.sentenceMonths)),
-
         cellCallType: b.cellCallType !== undefined ? b.cellCallType : existing?.cellCallType,
         notes: b.notes !== undefined ? b.notes : existing?.notes,
         by: b.by !== undefined ? b.by : existing?.by || 'unknown'
