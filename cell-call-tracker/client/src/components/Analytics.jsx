@@ -102,13 +102,11 @@ export default function Analytics({ user }){
       : observedSourceFiltered.filter(r => (Array.isArray(r.attorneyObservers) && r.attorneyObservers.length>0) || (Array.isArray(r.paralegalObservers) && r.paralegalObservers.length>0)).length;
 
     // fine and sentenceMonths removed from dataset; don't compute these KPIs
-    const totalFine = 0;
-    const totalMonths = 0;
     const byType=rows.reduce((m,r)=>((m[r.cellCallType]=(m[r.cellCallType]||0)+1),m),{});
     const supervisionCount = activeStaffId
       ? rows.filter(r => Array.isArray(r.supervising) && r.supervising.map(String).includes(String(activeStaffId))).length
       : rows.reduce((s,r)=> s + (Array.isArray(r.supervising) ? r.supervising.length : 0), 0);
-    return{total,chargesRemoved,chargesReplaced,bench,notGuilty,observedCount,totalFine,totalMonths,byType,supervisionCount};
+    return{total,chargesRemoved,chargesReplaced,bench,notGuilty,observedCount,byType,supervisionCount};
   },[rows,allRows,activeStaffId,activeFrom,activeTo]);
 
   async function deleteRecord(id){
