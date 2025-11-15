@@ -45,7 +45,7 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
       const b = req.body || {}
       // very light validation (your client already validates too)
-      if (!b.incidentId) return res.status(400).json({ error: 'incidentId required' })
+      // incidentId is optional now
       if (!b.dojReportNumber) return res.status(400).json({ error: 'dojReportNumber required' })
       if (b.leadingId === undefined || b.leadingId === null) return res.status(400).json({ error: 'leadingId required' })
 
@@ -61,7 +61,7 @@ export default async function handler(req, res) {
         createdAt: b.createdAt || nowIso,
         updatedAt: nowIso,
 
-        incidentId: String(b.incidentId),
+        incidentId: b.incidentId !== undefined && b.incidentId !== null ? String(b.incidentId) : undefined,
         dojReportNumber: String(b.dojReportNumber),
         leadingId: Number(b.leadingId),
 

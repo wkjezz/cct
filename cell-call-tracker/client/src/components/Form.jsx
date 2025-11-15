@@ -44,7 +44,7 @@ const Form = forwardRef(function Form({ user, onSaved }, ref){
 
   const init = () => ({
     date: todayYMD(),
-    incidentId: '',
+    // incidentId removed from form
     dojReportNumber: '',
     leadingId: '',
     supervising: [],
@@ -52,8 +52,8 @@ const Form = forwardRef(function Form({ user, onSaved }, ref){
     paralegalObservers: [],
     verdict: 'GUILTY',
     benchVerdictNumber: '',
-    chargesRemoved: 'no',
-    chargesReplaced: 'no',
+    chargesRemoved: false,
+    chargesReplaced: false,
     cellCallType: 'CELL_CALL',
     notes: '',
     by: 'dev-ui'
@@ -68,8 +68,6 @@ const Form = forwardRef(function Form({ user, onSaved }, ref){
   const hardClear=()=>{setForm(init());setMsg('');setFormKey(k=>k+1)};
 
   function validate(){
-    if(!form.incidentId) return 'Incident ID required';
-    if(form.incidentId.length!==6) return 'Incident ID must be 6 chars';
     if(!form.dojReportNumber) return 'DOJ Report required';
     if(form.dojReportNumber.length!==6) return 'DOJ Report must be 6 chars';
     if(!form.leadingId) return 'Select lead attorney';
@@ -99,7 +97,6 @@ const Form = forwardRef(function Form({ user, onSaved }, ref){
       date: toLocalMidnightISO(form.date),
       createdAt: new Date().toISOString(),
       savedAt:   new Date().toISOString(),
-      incidentId: form.incidentId,
       dojReportNumber: form.dojReportNumber,
       leadingId: Number(form.leadingId),
       supervising: form.supervising.map(id => id === 'judiciary' ? 'judiciary' : Number(id)),
@@ -107,8 +104,8 @@ const Form = forwardRef(function Form({ user, onSaved }, ref){
       paralegalObservers: form.paralegalObservers.map(Number),
       verdict: form.verdict,
       benchVerdictNumber: form.verdict==='BENCH_REQUEST' ? form.benchVerdictNumber : null,
-      chargesRemoved: form.chargesRemoved === 'yes',
-      chargesReplaced: form.chargesRemoved === 'yes' && form.chargesReplaced === 'yes',
+      chargesRemoved: !!form.chargesRemoved,
+      chargesReplaced: !!form.chargesRemoved && !!form.chargesReplaced,
       cellCallType: form.cellCallType,
       notes: form.notes,
       by: form.by
@@ -178,7 +175,7 @@ const Form = forwardRef(function Form({ user, onSaved }, ref){
     {/* Row 1: Date | Cell Call Type */}
     <Row>
       <label className="field">
-        <Label>Date</Label>
+        <Label>Date of cell call</Label>
         <input type="date" value={form.date} onChange={e=>upd('date',e.target.value)} />
       </label>
 
@@ -192,13 +189,10 @@ const Form = forwardRef(function Form({ user, onSaved }, ref){
       </label>
     </Row>
 
-    {/* Row 2: DOJ Report # | Incident ID */}
+    {/* Row 2: DOJ Report # */}
     <Row>
       <label className="field"><Label>DOJ Report # (6 chars)</Label>
         <input value={form.dojReportNumber} onChange={e=>upd('dojReportNumber',six(e.target.value))} maxLength={6}/>
-      </label>
-      <label className="field"><Label>Incident ID (6 chars)</Label>
-        <input value={form.incidentId} onChange={e=>upd('incidentId',six(e.target.value))} maxLength={6}/>
       </label>
     </Row>
 
@@ -218,7 +212,6 @@ const Form = forwardRef(function Form({ user, onSaved }, ref){
         onAdd={id=>upd('supervising',[...new Set([...form.supervising,String(id)])])}
         onRemove={id=>upd('supervising',form.supervising.filter(x=>x!==String(id)))}/>
     </Row>
-
     {/* Row 4: Attorney Observing | Paralegal Observing */}
     <Row>
       <AddSelect key={`att-${formKey}`} label="Attorney Observing" options={staffOpts}
@@ -234,9 +227,9 @@ const Form = forwardRef(function Form({ user, onSaved }, ref){
 
     <Divider />
 
-    {/* Row 5: Verdict | Bench Verdict Number (conditional) */}
+    {/* Row 5: Plea | Bench Plea Number (conditional) */}
     <Row>
-      <label className="field"><Label>Verdict</Label>
+      <label className="field"><Label>Plea</Label>
         <select value={form.verdict} onChange={e=>upd('verdict',e.target.value)}>
           <option value="GUILTY">Guilty</option>
           <option value="NOT_GUILTY">Not Guilty</option>
@@ -246,25 +239,21 @@ const Form = forwardRef(function Form({ user, onSaved }, ref){
       </label>
 
       {form.verdict==='BENCH_REQUEST'
-        ? <label className="field"><Label>Verdict Number</Label><input value={form.benchVerdictNumber} onChange={e=>upd('benchVerdictNumber',e.target.value)}/></label>
+        ? <label className="field"><Label>Plea Number</Label><input value={form.benchVerdictNumber} onChange={e=>upd('benchVerdictNumber',e.target.value)}/></label>
         : <div />
       }
     </Row>
 
     {/* Row 6: Charges Removed? | Charges Replaced? */}
     <Row>
-      <label className="field"><Label>Charges Removed?</Label>
-        <select value={form.chargesRemoved} onChange={e=>upd('chargesRemoved',e.target.value)}>
-          <option value="no">No</option><option value="yes">Yes</option>
-        </select>
+      <label className="field"><Label>Charge Removal/Correction Negotiated?</Label>
+        <input type="checkbox" checked={!!form.chargesRemoved} onChange={e=>upd('chargesRemoved', !!e.target.checked)} />
       </label>
 
-      {form.chargesRemoved==='yes'
+      {form.chargesRemoved
         ? (
           <label className="field"><Label>Charges Replaced?</Label>
-            <select value={form.chargesReplaced} onChange={e=>upd('chargesReplaced',e.target.value)}>
-              <option value="no">No</option><option value="yes">Yes</option>
-            </select>
+            <input type="checkbox" checked={!!form.chargesReplaced} onChange={e=>upd('chargesReplaced', !!e.target.checked)} />
           </label>
         ) : <div />
       }

@@ -66,14 +66,14 @@ app.delete('/api/staff/:id', (req, res) => {
 // ---------- Records ----------
 app.post('/api/records', (req, res) => {
   const b = req.body || {};
-  if (!b.incidentId) return res.status(400).json({ error: 'incidentId required' });
+  // incidentId is optional
   if (!b.dojReportNumber) return res.status(400).json({ error: 'dojReportNumber required' });
   if (b.leadingId === undefined || b.leadingId === null) return res.status(400).json({ error: 'leadingId required' });
 
   const rec = {
     id: nanoid(12),
     date: b.date ? new Date(b.date).toISOString() : new Date().toISOString(),
-    incidentId: String(b.incidentId),
+    incidentId: b.incidentId !== undefined && b.incidentId !== null ? String(b.incidentId) : undefined,
     dojReportNumber: String(b.dojReportNumber),
     leadingId: Number(b.leadingId),
     attorneyObservers: Array.isArray(b.attorneyObservers) ? b.attorneyObservers.map(Number) : [],

@@ -46,7 +46,7 @@ export default function FormManual({ user, onSaved }){
 
   const init = () => ({
     date: todayYMD(),
-    incidentId: '',
+    // incidentId removed
     dojReportNumber: '',
     leadingId: '',
     supervising: [],
@@ -54,8 +54,8 @@ export default function FormManual({ user, onSaved }){
     paralegalObservers: [],
     verdict: 'GUILTY',
     benchVerdictNumber: '',
-    chargesRemoved: 'no',
-    chargesReplaced: 'no',
+    chargesRemoved: false,
+    chargesReplaced: false,
     cellCallType: 'CELL_CALL',
     notes: '',
     by: 'dev-ui'
@@ -98,10 +98,9 @@ export default function FormManual({ user, onSaved }){
       setAnalyzing(false);
       if (!res.ok) { setMsg(data?.error || 'Analysis failed'); return; }
 
-      // Expected response example: { dojReportNumber, incidentId, date, leadingId, notes }
+      // Expected response example: { dojReportNumber, date, leadingId, notes }
       const mapped = {};
       if (data.dojReportNumber) mapped.dojReportNumber = String(data.dojReportNumber).slice(0,6);
-      if (data.incidentId) mapped.incidentId = String(data.incidentId).slice(0,6);
       if (data.date) mapped.date = data.date;
       if (data.leadingId) mapped.leadingId = String(data.leadingId);
       if (data.notes) mapped.notes = String(data.notes);
@@ -117,11 +116,10 @@ export default function FormManual({ user, onSaved }){
 
   async function submit(e){
     e?.preventDefault?.();
-    // reuse basic validation from the original form
-    if(!form.incidentId) { setMsg('Incident ID required'); return; }
-    if(form.incidentId.length!==6) { setMsg('Incident ID must be 6 chars'); return; }
+    // basic validation
     if(!form.dojReportNumber) { setMsg('DOJ Report required'); return; }
     if(form.dojReportNumber.length!==6) { setMsg('DOJ Report must be 6 chars'); return; }
+    if(!form.leadingId) { setMsg('Select lead attorney'); return; }
     if(!form.leadingId) { setMsg('Select lead attorney'); return; }
 
     setSaving(true); setMsg('Saving...');
@@ -129,7 +127,7 @@ export default function FormManual({ user, onSaved }){
       date: toLocalMidnightISO(form.date),
       createdAt: new Date().toISOString(),
       savedAt:   new Date().toISOString(),
-      incidentId: form.incidentId,
+      // incidentId removed
       dojReportNumber: form.dojReportNumber,
       leadingId: Number(form.leadingId),
       supervising: form.supervising.map(id => id === 'judiciary' ? 'judiciary' : Number(id)),
@@ -137,8 +135,8 @@ export default function FormManual({ user, onSaved }){
       paralegalObservers: form.paralegalObservers.map(Number),
       verdict: form.verdict,
       benchVerdictNumber: form.verdict==='BENCH_REQUEST' ? form.benchVerdictNumber : null,
-      chargesRemoved: form.chargesRemoved === 'yes',
-      chargesReplaced: form.chargesRemoved === 'yes' && form.chargesReplaced === 'yes',
+      chargesRemoved: !!form.chargesRemoved,
+      chargesReplaced: !!form.chargesRemoved && !!form.chargesReplaced,
       cellCallType: form.cellCallType,
       notes: form.notes,
       by: form.by
@@ -170,7 +168,7 @@ export default function FormManual({ user, onSaved }){
         <div style={{flex:1}}>
           <Row>
             <label className="field">
-              <Label>Date</Label>
+              <Label>Date of cell call</Label>
               <input type="date" value={form.date} onChange={e=>upd('date',e.target.value)} />
             </label>
             <label className="field">
@@ -186,9 +184,6 @@ export default function FormManual({ user, onSaved }){
           <Row>
             <label className="field"><Label>DOJ Report # (6 chars)</Label>
               <input value={form.dojReportNumber} onChange={e=>upd('dojReportNumber',six(e.target.value))} maxLength={6}/>
-            </label>
-            <label className="field"><Label>Incident ID (6 chars)</Label>
-              <input value={form.incidentId} onChange={e=>upd('incidentId',six(e.target.value))} maxLength={6}/>
             </label>
           </Row>
 
@@ -223,7 +218,7 @@ export default function FormManual({ user, onSaved }){
           <Divider />
 
           <Row>
-            <label className="field"><Label>Verdict</Label>
+            <label className="field"><Label>Plea</Label>
               <select value={form.verdict} onChange={e=>upd('verdict',e.target.value)}>
                 <option value="GUILTY">Guilty</option>
                 <option value="NOT_GUILTY">Not Guilty</option>
@@ -233,7 +228,7 @@ export default function FormManual({ user, onSaved }){
             </label>
 
             {form.verdict==='BENCH_REQUEST'
-              ? <label className="field"><Label>Verdict Number</Label><input value={form.benchVerdictNumber} onChange={e=>upd('benchVerdictNumber',e.target.value)}/></label>
+              ? <label className="field"><Label>Plea Number</Label><input value={form.benchVerdictNumber} onChange={e=>upd('benchVerdictNumber',e.target.value)}/></label>
               : <div />
             }
           </Row>

@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const record = req.body
-    if (!record.incidentId) return res.status(400).json({ error: 'incidentId required' })
+    // incidentId is optional
     if (!record.dojReportNumber) return res.status(400).json({ error: 'dojReportNumber required' })
 
     const id = record.id || crypto.randomUUID()

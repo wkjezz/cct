@@ -125,15 +125,15 @@ export default function Analytics({ user }){
     lines.push(`**${totalLabel}:** ${kpi.total}`);
     lines.push(`**Cell Calls Supervised:** ${kpi.supervisionCount}`);
     lines.push(`**Cell Calls Observed:** ${kpi.observedCount}`);
-    lines.push(`**Charges Removed:** ${kpi.chargesRemoved}`);
+    lines.push(`**Charge Removal/Correction Negotiated:** ${kpi.chargesRemoved}`);
     lines.push(`**Charges Replaced:** ${kpi.chargesReplaced}`);
     lines.push(`**Bench Requests:** ${kpi.bench}`);
     // fine and sentenceMonths omitted from report
     lines.push(`\n### Breakdown`);
-    lines.push(`| Date | Incident | DOJ# | Lead | Verdict | Type |`);
-    lines.push(`|------|-----------|------|------|----------|------|`);
+    lines.push(`| Date | DOJ# | Lead | Plea | Type |`);
+    lines.push(`|------|------|------|----------|------|`);
     for(const r of rows){
-      lines.push(`| ${fmtDateUS(r.date||r.createdAt)} | ${r.incidentId} | ${r.dojReportNumber} | ${staffMap[String(r.leadingId)]?.name||r.leadingId} | ${r.verdict} | ${r.cellCallType} |`);
+      lines.push(`| ${fmtDateUS(r.date||r.createdAt)} | ${r.dojReportNumber} | ${staffMap[String(r.leadingId)]?.name||r.leadingId} | ${r.verdict} | ${r.cellCallType} |`);
     }
     await navigator.clipboard.writeText(lines.join('\n'));
     setCopied(true); setTimeout(()=>setCopied(false),2000);
@@ -163,7 +163,7 @@ export default function Analytics({ user }){
           <option value="WARRANT_ARREST">Warrant Arrest</option>
           <option value="SENTENCING_HEARING">Sentencing Hearing</option>
         </select></label>
-      <label className="field"><Label>Verdict</Label>
+      <label className="field"><Label>Plea</Label>
         <select value={verdict} onChange={e=>setVerdict(e.target.value)}>
           <option value="">All</option>
           <option value="NOT_GUILTY">Not Guilty Plea</option>
@@ -174,7 +174,7 @@ export default function Analytics({ user }){
 
     <div className="row" style={{marginTop:12}}>
       <div className="card"><h3>{activeStaffId ? 'Cell Calls Lead' : 'Total Records'}</h3><p style={{fontSize:28,margin:0}}>{kpi.total}</p></div>
-      <div className="card"><h3>Charges Removed</h3><p style={{fontSize:28,margin:0}}>{kpi.chargesRemoved}</p></div>
+      <div className="card"><h3>Charge Removal/Correction Negotiated</h3><p style={{fontSize:28,margin:0}}>{kpi.chargesRemoved}</p></div>
       <div className="card"><h3>Cell Calls Supervised</h3><p style={{fontSize:28,margin:0}}>{kpi.supervisionCount}</p></div>
       <div className="card"><h3>Cell Calls Observed</h3><p style={{fontSize:28,margin:0}}>{kpi.observedCount}</p></div>
       <div className="card"><h3>Not Guilty Pleas</h3><p style={{fontSize:28,margin:0}}>{kpi.notGuilty}</p></div>
@@ -198,11 +198,10 @@ export default function Analytics({ user }){
               <thead>
                 <tr>
                   <th style={{position:'sticky',top:0,background:'var(--card)'}}>Date</th>
-                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>Incident</th>
                   <th style={{position:'sticky',top:0,background:'var(--card)'}}>DOJ #</th>
                   <th style={{position:'sticky',top:0,background:'var(--card)'}}>Leading</th>
-                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>Verdict</th>
-                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>Charges Removed?</th>
+                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>Plea</th>
+                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>Charge Removal/Correction Negotiated?</th>
                   <th style={{position:'sticky',top:0,background:'var(--card)'}}>Charges Replaced?</th>
                   {/* Fine & Sentence columns removed */}
                   <th style={{position:'sticky',top:0,background:'var(--card)'}}>Type</th>
@@ -213,7 +212,6 @@ export default function Analytics({ user }){
                 {rows.map(r => (
                   <tr key={r.id}>
                     <td>{fmtDateUS(r.date || r.createdAt)}</td>
-                    <td>{r.incidentId}</td>
                     <td>{r.dojReportNumber}</td>
                     <td>{staffMap[String(r.leadingId)]?.name || r.leadingId}</td>
                     <td>{r.verdict}</td>
@@ -232,7 +230,7 @@ export default function Analytics({ user }){
                     </td>
                   </tr>
                 ))}
-                {rows.length === 0 && <tr><td colSpan="11" style={{textAlign: 'center'}}>No records</td></tr>}
+                {rows.length === 0 && <tr><td colSpan="8" style={{textAlign: 'center'}}>No records</td></tr>}
               </tbody>
             </table>
           </div>

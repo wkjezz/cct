@@ -118,7 +118,7 @@ export default async function handler(req, res) {
       const user = getUserFromReq(req)
       if (!user) return bad(res, 'Unauthorized', 401)
       if (!user.admin) return bad(res, 'Forbidden', 403)
-      if (!body.incidentId) return bad(res, 'incidentId required');
+      // incidentId is optional
       if (!body.dojReportNumber) return bad(res, 'dojReportNumber required');
       if (body.leadingId === undefined || body.leadingId === null) return bad(res, 'leadingId required');
 
@@ -148,7 +148,7 @@ export default async function handler(req, res) {
         date: body.date ? new Date(body.date).toISOString() : nowISO,
         createdAt: nowISO,
 
-        incidentId: String(body.incidentId),
+        incidentId: body.incidentId !== undefined && body.incidentId !== null ? String(body.incidentId) : undefined,
         dojReportNumber: String(body.dojReportNumber),
         leadingId: Number(body.leadingId),
 
