@@ -61,8 +61,8 @@ export default function SmartView({ user, onSaved, setView }){
       if (data.date) mapped.date = data.date;
       if (data.leadingId) mapped.leadingId = String(data.leadingId);
       if (data.notes) mapped.notes = String(data.notes);
-      if (typeof data.chargesRemoved !== 'undefined') mapped.chargesRemoved = data.chargesRemoved ? 'yes' : 'no';
-      if (typeof data.chargesReplaced !== 'undefined') mapped.chargesReplaced = data.chargesReplaced ? 'yes' : 'no';
+      if (typeof data.chargesRemoved !== 'undefined') mapped.chargesRemoved = !!data.chargesRemoved;
+      if (typeof data.chargesReplaced !== 'undefined') mapped.chargesReplaced = !!data.chargesReplaced;
 
       formRef.current?.setValues(mapped);
       setMsg('Analysis complete — review fields before saving.');

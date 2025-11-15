@@ -142,11 +142,7 @@ export default function Analytics({ user }){
   return (
   <div className="card" style={{marginTop:16}}>
     <h2>Analytics</h2>
-    <div className="card" style={{marginTop:12}}>
-      <h3>The Last 7 days at a glance</h3>
-      <p style={{marginTop:6, marginBottom:8, color:'var(--muted)'}}>A quick heat map of total cell calls per day over the rolling 7-day window.</p>
-      <Heat7Days rows={allRows} staffId={activeStaffId} />
-    </div>
+    {/* Heatmap moved below KPI cards */}
     <Row>
       <label className="field"><Label>From</Label><input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label>
       <label className="field"><Label>To</Label><input type="date" value={to} onChange={e=>setTo(e.target.value)}/></label>
@@ -173,6 +169,12 @@ export default function Analytics({ user }){
     </Row>
 
     <div className="row" style={{marginTop:12}}>
+      <button className="btn" onClick={()=>{ setActiveFrom(from); setActiveTo(to); setActiveStaffId(staffId); setActiveCellCallType(cellCallType); setActiveVerdict(verdict); load({ from, to, staffId, cellCallType, verdict }); }}>Apply Filters</button>
+      <button className="btn" onClick={generateReport}>Generate Report</button>
+      {copied && <span className="pill">✅ Report copied to clipboard</span>}
+    </div>
+
+    <div className="row" style={{marginTop:12}}>
       <div className="card"><h3>{activeStaffId ? 'Cell Calls Lead' : 'Total Records'}</h3><p style={{fontSize:28,margin:0}}>{kpi.total}</p></div>
       <div className="card"><h3>Charge Removal/Correction Negotiated</h3><p style={{fontSize:28,margin:0}}>{kpi.chargesRemoved}</p></div>
       <div className="card"><h3>Cell Calls Supervised</h3><p style={{fontSize:28,margin:0}}>{kpi.supervisionCount}</p></div>
@@ -182,10 +184,10 @@ export default function Analytics({ user }){
       {/* Fine and Sentence KPIs removed */}
     </div>
 
-    <div className="row" style={{marginTop:12}}>
-      <button className="btn" onClick={()=>{ setActiveFrom(from); setActiveTo(to); setActiveStaffId(staffId); setActiveCellCallType(cellCallType); setActiveVerdict(verdict); load({ from, to, staffId, cellCallType, verdict }); }}>Apply Filters</button>
-      <button className="btn" onClick={generateReport}>Generate Report</button>
-      {copied && <span className="pill">✅ Report copied to clipboard</span>}
+    {/* Heatmap: below KPI cards, above Results */}
+    <div className="card" style={{marginTop:12}}>
+      <h3>The Last 7 days at a glance</h3>
+      <Heat7Days rows={allRows} staffId={activeStaffId} />
     </div>
 
     <div className="card" style={{marginTop:16}}>

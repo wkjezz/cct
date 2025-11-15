@@ -227,36 +227,39 @@ const Form = forwardRef(function Form({ user, onSaved }, ref){
 
     <Divider />
 
-    {/* Row 5: Plea | Bench Plea Number (conditional) */}
+    {/* Row 5: Plea | Bench Plea Number (conditional) | Charges */}
     <Row>
-      <label className="field"><Label>Plea</Label>
-        <select value={form.verdict} onChange={e=>upd('verdict',e.target.value)}>
-          <option value="GUILTY">Guilty</option>
-          <option value="NOT_GUILTY">Not Guilty</option>
-          <option value="NO_CONTEST">No Contest</option>
-          <option value="BENCH_REQUEST">Bench Request</option>
-        </select>
-      </label>
+      <div style={{display:'flex',gap:12,alignItems:'center',flex:1}}>
+        <label className="field" style={{flex:'0 0 320px'}}><Label>Plea</Label>
+          <select value={form.verdict} onChange={e=>upd('verdict',e.target.value)}>
+            <option value="GUILTY">Guilty</option>
+            <option value="NOT_GUILTY">Not Guilty</option>
+            <option value="NO_CONTEST">No Contest</option>
+            <option value="BENCH_REQUEST">Bench Request</option>
+          </select>
+        </label>
 
-      {form.verdict==='BENCH_REQUEST'
-        ? <label className="field"><Label>Plea Number</Label><input value={form.benchVerdictNumber} onChange={e=>upd('benchVerdictNumber',e.target.value)}/></label>
-        : <div />
-      }
-    </Row>
+        {form.verdict==='BENCH_REQUEST'
+          ? <label className="field" style={{flex:'0 0 160px'}}><Label>Plea Number</Label><input value={form.benchVerdictNumber} onChange={e=>upd('benchVerdictNumber',e.target.value)}/></label>
+          : <div style={{width:160}} />
+        }
 
-    {/* Row 6: Charges Removed? | Charges Replaced? */}
-    <Row>
-      <label className="field"><Label>Charge Removal/Correction Negotiated?</Label>
-        <input type="checkbox" checked={!!form.chargesRemoved} onChange={e=>upd('chargesRemoved', !!e.target.checked)} />
-      </label>
-
-      {form.chargesRemoved
-        ? (
-          <label className="field"><Label>Charges Replaced?</Label>
-            <input type="checkbox" checked={!!form.chargesReplaced} onChange={e=>upd('chargesReplaced', !!e.target.checked)} />
+        <div style={{display:'flex',gap:12,alignItems:'center'}}>
+          <label className="field" style={{display:'flex',alignItems:'center',gap:8}}>
+            <input type="checkbox" checked={!!form.chargesRemoved} onChange={e=>upd('chargesRemoved', !!e.target.checked)} style={{transform:'scale(1.25)'}} />
+            <div style={{display:'flex',flexDirection:'column'}}>
+              <div style={{fontSize:12,fontWeight:600}}>Charge(s) Removed?</div>
+            </div>
           </label>
-        ) : <div />
-      }
+
+          {form.chargesRemoved ? (
+            <label className="field" style={{display:'flex',alignItems:'center',gap:8}}>
+              <input type="checkbox" checked={!!form.chargesReplaced} onChange={e=>upd('chargesReplaced', !!e.target.checked)} style={{transform:'scale(1.25)'}} />
+              <div style={{fontSize:12,fontWeight:600}}>Charges Replaced?</div>
+            </label>
+          ) : null}
+        </div>
+      </div>
     </Row>
 
     {/* Fine and Sentence fields removed */}
