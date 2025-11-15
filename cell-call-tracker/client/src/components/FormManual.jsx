@@ -234,16 +234,18 @@ export default function FormManual({ user, onSaved }){
 
               <label className="field" style={{flex:1}}>
                 <Label>Charge(s) Removed?</Label>
-                <div className="checkbox-center">
-                  <input type="checkbox" checked={!!form.chargesRemoved} onChange={e=>upd('chargesRemoved', !!e.target.checked)} style={{transform:'scale(1.25)'}} />
-                </div>
+                <select style={{width:'100%'}} value={form.chargesRemoved ? 'yes' : 'no'} onChange={e=>upd('chargesRemoved', e.target.value === 'yes')}>
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
+                </select>
               </label>
 
               <label className="field" style={{flex:1}}>
                 <Label>Charge(s) Replace?</Label>
-                <div className="checkbox-center">
-                  <input type="checkbox" checked={!!form.chargesReplaced} onChange={e=>upd('chargesReplaced', !!e.target.checked)} style={{transform:'scale(1.25)'}} />
-                </div>
+                <select style={{width:'100%'}} value={form.chargesReplaced ? 'yes' : 'no'} onChange={e=>upd('chargesReplaced', e.target.value === 'yes')}>
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
+                </select>
               </label>
             </div>
           </Row>
