@@ -82,7 +82,7 @@ export default function Analytics({ user }){
     const filterByDate = (arr) => {
       if (!Array.isArray(arr)) return [];
       return arr.filter(r => {
-        const ts = Date.parse(r.createdAt || r.date);
+        const ts = Date.parse(r.date || r.createdAt);
         if (!Number.isFinite(ts)) return false;
         if (activeFrom) {
           const fromMs = Date.parse(toLocalMidnightISO(activeFrom));
@@ -135,7 +135,7 @@ export default function Analytics({ user }){
     lines.push(`| Date | Incident | DOJ# | Lead | Verdict | Fine | Sentence | Type |`);
     lines.push(`|------|-----------|------|------|----------|------|-----------|------|`);
     for(const r of rows){
-      lines.push(`| ${fmtDateUS(r.createdAt||r.date)} | ${r.incidentId} | ${r.dojReportNumber} | ${staffMap[String(r.leadingId)]?.name||r.leadingId} | ${r.verdict} | ${r.fine??'-'} | ${r.sentenceMonths??'-'} | ${r.cellCallType} |`);
+      lines.push(`| ${fmtDateUS(r.date||r.createdAt)} | ${r.incidentId} | ${r.dojReportNumber} | ${staffMap[String(r.leadingId)]?.name||r.leadingId} | ${r.verdict} | ${r.fine??'-'} | ${r.sentenceMonths??'-'} | ${r.cellCallType} |`);
     }
     await navigator.clipboard.writeText(lines.join('\n'));
     setCopied(true); setTimeout(()=>setCopied(false),2000);
@@ -205,7 +205,7 @@ export default function Analytics({ user }){
             <tbody>
               {rows.map(r=>(
                 <tr key={r.id}>
-                  <td>{fmtDateUS(r.createdAt||r.date)}</td>
+                  <td>{fmtDateUS(r.date||r.createdAt)}</td>
                   <td>{r.incidentId}</td>
                   <td>{r.dojReportNumber}</td>
                   <td>{staffMap[String(r.leadingId)]?.name || r.leadingId}</td>
@@ -248,7 +248,7 @@ function Heat7Days({ rows }){
   const counts = days.map(d => 0);
   if(Array.isArray(rows)){
     for(const r of rows){
-      const ts = Date.parse(r.createdAt || r.date || r.timestamp || '');
+      const ts = Date.parse(r.date || r.createdAt || r.timestamp || '');
       if(!Number.isFinite(ts)) continue;
       const d = new Date(ts);
       d.setHours(0,0,0,0);
