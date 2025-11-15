@@ -1,11 +1,9 @@
 [
   { "id": 1, "name": "Alora Vaughn", "role": "Chief of Public Defense" },
   { "id": 2, "name": "Lucy Greene", "role": "Deputy Chief of Public Defense" },
-  { "id": 3, "name": "Remy Vaughn", "role": "Lead Public Defender" },
   { "id": 4, "name": "Colin Burns", "role": "Lead Public Defender" },
   { "id": 5, "name": "Gabriel Specter", "role": "Senior Public Defender" },
-  { "id": 6, "name": "Cora Lomaine-Stark", "role": "Public Defender" },
-  { "id": 7, "name": "Jon Harvey", "role": "Junior Public Defender" },
+  
   { "id": 8, "name": "Vanessa Hurgs", "role": "Junior Public Defender" },
   { "id": 9, "name": "Jeb Mayberry", "role": "Junior Public Defender" },
   { "id": 10, "name": "Aliera Swift", "role": "Junior Public Defender" },
