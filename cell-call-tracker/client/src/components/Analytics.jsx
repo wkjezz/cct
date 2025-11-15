@@ -281,7 +281,9 @@ function Heat7Days({ rows, staffId }){
           const bg = `rgba(78,121,167,${0.15 + 0.85 * ratio})`;
           return (
             <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center'}}>
-              <div title={`${dayLabels[i]}: ${c}`} style={{width:'100%',height:48,background:bg,borderRadius:6,border:'1px solid rgba(0,0,0,0.06)'}} />
+              <div title={`${dayLabels[i]}: ${c}`} style={{width:'100%',height:48,background:bg,borderRadius:6,border:'1px solid rgba(0,0,0,0.06)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <span style={{fontSize:16,fontWeight:700,color: (c / max) > 0.5 ? '#fff' : 'var(--text)'}}>{c}</span>
+              </div>
               <small style={{marginTop:6,color:'var(--muted)'}}>{dayLabels[i].split(',')[0]}</small>
             </div>
           )
