@@ -159,13 +159,6 @@ export default function Analytics({ user }){
           <option value="WARRANT_ARREST">Warrant Arrest</option>
           <option value="SENTENCING_HEARING">Sentencing Hearing</option>
         </select></label>
-      <label className="field"><Label>Plea</Label>
-        <select value={verdict} onChange={e=>setVerdict(e.target.value)}>
-          <option value="">All</option>
-          <option value="NOT_GUILTY">Not Guilty Plea</option>
-          <option value="BENCH_REQUEST">Bench Trial Request</option>
-          <option value="GUILTY">Guilty</option>
-        </select></label>
     </Row>
 
     <div className="row" style={{marginTop:12}}>
@@ -203,7 +196,7 @@ export default function Analytics({ user }){
                   <th style={{position:'sticky',top:0,background:'var(--card)'}}>DOJ #</th>
                   <th style={{position:'sticky',top:0,background:'var(--card)'}}>Leading</th>
                   <th style={{position:'sticky',top:0,background:'var(--card)'}}>Plea</th>
-                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>Charge Removal/Correction Negotiated?</th>
+                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>Charge(s) Removed?</th>
                   <th style={{position:'sticky',top:0,background:'var(--card)'}}>Charges Replaced?</th>
                   {/* Fine & Sentence columns removed */}
                   <th style={{position:'sticky',top:0,background:'var(--card)'}}>Type</th>
