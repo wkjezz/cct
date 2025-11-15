@@ -193,42 +193,54 @@ export default function Analytics({ user }){
 
     <div className="card" style={{marginTop:16}}>
       <h3>Results</h3>
-      {loading?<p>Loading…</p>:(
+      {loading ? <p>Loading…</p> : (
         <div style={{overflowX:'auto'}}>
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th><th>Incident</th><th>DOJ #</th><th>Leading</th><th>Verdict</th>
-                <th>Charges Removed?</th><th>Charges Replaced?</th><th>Fine</th><th>Sentence</th><th>Type</th><th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(r=>(
-                <tr key={r.id}>
-                  <td>{fmtDateUS(r.date||r.createdAt)}</td>
-                  <td>{r.incidentId}</td>
-                  <td>{r.dojReportNumber}</td>
-                  <td>{staffMap[String(r.leadingId)]?.name || r.leadingId}</td>
-                  <td>{r.verdict}</td>
-                  <td>{r.chargesRemoved ? 'Yes' : 'No'}</td>
-                  <td>{r.chargesRemoved ? (r.chargesReplaced ? 'Yes' : 'No') : 'N/A'}</td>
-                  <td>{r.fine ?? '-'}</td>
-                  <td>{r.sentenceMonths ?? '-'}</td>
-                  <td>{r.cellCallType}</td>
-                  <td>
-                    {user?.admin ? (
-                      <button
-                        onClick={() => { if(window.confirm('Delete this record?')) deleteRecord(r.id) }}
-                        style={{ background:'transparent', border:'none', color:'var(--text-light)', cursor:'pointer', fontSize:'1.2em' }}
-                        title="Delete record"
-                      >🗑️</button>
-                    ) : null}
-                  </td>
+          {/* Fixed-height scroll area so only ~10 rows are visible; extra rows scroll vertically */}
+          <div style={{maxHeight:420, overflowY:'auto'}}>
+            <table style={{width:'100%', borderCollapse:'collapse'}}>
+              <thead>
+                <tr>
+                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>Date</th>
+                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>Incident</th>
+                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>DOJ #</th>
+                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>Leading</th>
+                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>Verdict</th>
+                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>Charges Removed?</th>
+                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>Charges Replaced?</th>
+                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>Fine</th>
+                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>Sentence</th>
+                  <th style={{position:'sticky',top:0,background:'var(--card)'}}>Type</th>
+                  <th style={{position:'sticky',top:0,background:'var(--card)'}}></th>
                 </tr>
-              ))}
-              {rows.length===0 && <tr><td colSpan="11" style={{textAlign:'center'}}>No records</td></tr>}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map(r => (
+                  <tr key={r.id}>
+                    <td>{fmtDateUS(r.date || r.createdAt)}</td>
+                    <td>{r.incidentId}</td>
+                    <td>{r.dojReportNumber}</td>
+                    <td>{staffMap[String(r.leadingId)]?.name || r.leadingId}</td>
+                    <td>{r.verdict}</td>
+                    <td>{r.chargesRemoved ? 'Yes' : 'No'}</td>
+                    <td>{r.chargesRemoved ? (r.chargesReplaced ? 'Yes' : 'No') : 'N/A'}</td>
+                    <td>{r.fine ?? '-'}</td>
+                    <td>{r.sentenceMonths ?? '-'}</td>
+                    <td>{r.cellCallType}</td>
+                    <td>
+                      {user?.admin ? (
+                        <button
+                          onClick={() => { if (window.confirm('Delete this record?')) deleteRecord(r.id) }}
+                          style={{ background: 'transparent', border: 'none', color: 'var(--text-light)', cursor: 'pointer', fontSize: '1.2em' }}
+                          title="Delete record"
+                        >🗑️</button>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+                {rows.length === 0 && <tr><td colSpan="11" style={{textAlign: 'center'}}>No records</td></tr>}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
