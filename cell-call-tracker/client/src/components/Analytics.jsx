@@ -144,6 +144,11 @@ export default function Analytics({ user }){
   return (
   <div className="card" style={{marginTop:16}}>
     <h2>Analytics</h2>
+    <div className="card" style={{marginTop:12}}>
+      <h3>The Last 7 days at a glance</h3>
+      <p style={{marginTop:6, marginBottom:8, color:'var(--muted)'}}>A quick heat map of total cell calls per day over the rolling 7-day window.</p>
+      <Heat7Days rows={allRows} />
+    </div>
     <Row>
       <label className="field"><Label>From</Label><input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label>
       <label className="field"><Label>To</Label><input type="date" value={to} onChange={e=>setTo(e.target.value)}/></label>
@@ -228,4 +233,57 @@ export default function Analytics({ user }){
       )}
     </div>
   </div>);
+}
+
+function Heat7Days({ rows }){
+  // Compute counts for the last 7 days (rolling, ending today)
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const days = new Array(7).fill(0).map((_,i)=>{
+    const d = new Date(today);
+    d.setDate(d.getDate() - (6 - i)); // oldest -> newest
+    return d;
+  });
+
+  const counts = days.map(d => 0);
+  if(Array.isArray(rows)){
+    for(const r of rows){
+      const ts = Date.parse(r.createdAt || r.date || r.timestamp || '');
+      if(!Number.isFinite(ts)) continue;
+      const d = new Date(ts);
+      d.setHours(0,0,0,0);
+      for(let i=0;i<days.length;i++){
+        if(d.getTime() === days[i].getTime()){
+          counts[i]++;
+          break;
+        }
+      }
+    }
+  }
+
+  const max = Math.max(...counts, 1);
+
+  const dayLabels = days.map(d => d.toLocaleDateString(undefined, { weekday: 'short', month: 'numeric', day: 'numeric' }));
+
+  return (
+    <div>
+      <div style={{display:'flex',gap:8,alignItems:'flex-end'}}>
+        {counts.map((c,i)=>{
+          const ratio = c / max;
+          const bg = `rgba(78,121,167,${0.15 + 0.85 * ratio})`;
+          return (
+            <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center'}}>
+              <div title={`${dayLabels[i]}: ${c}`} style={{width:'100%',height:48,background:bg,borderRadius:6,border:'1px solid rgba(0,0,0,0.06)'}} />
+              <small style={{marginTop:6,color:'var(--muted)'}}>{dayLabels[i].split(',')[0]}</small>
+            </div>
+          )
+        })}
+      </div>
+      <div style={{display:'flex',gap:8,alignItems:'center',marginTop:8}}>
+        <small style={{color:'var(--muted)'}}>0</small>
+        <div style={{height:8,flex:1,background:'linear-gradient(90deg, rgba(78,121,167,0.15), rgba(78,121,167,1))',borderRadius:4}} />
+        <small style={{color:'var(--muted)'}}>{max}</small>
+      </div>
+    </div>
+  )
 }
