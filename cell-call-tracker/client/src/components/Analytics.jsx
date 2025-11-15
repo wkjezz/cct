@@ -147,7 +147,7 @@ export default function Analytics({ user }){
     <div className="card" style={{marginTop:12}}>
       <h3>The Last 7 days at a glance</h3>
       <p style={{marginTop:6, marginBottom:8, color:'var(--muted)'}}>A quick heat map of total cell calls per day over the rolling 7-day window.</p>
-      <Heat7Days rows={allRows} />
+      <Heat7Days rows={allRows} staffId={activeStaffId} />
     </div>
     <Row>
       <label className="field"><Label>From</Label><input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label>
@@ -235,7 +235,7 @@ export default function Analytics({ user }){
   </div>);
 }
 
-function Heat7Days({ rows }){
+function Heat7Days({ rows, staffId }){
   // Compute counts for the last 7 days (rolling, ending today)
   const today = new Date();
   today.setHours(0,0,0,0);
@@ -247,7 +247,15 @@ function Heat7Days({ rows }){
 
   const counts = days.map(d => 0);
   if(Array.isArray(rows)){
-    for(const r of rows){
+    // Optionally restrict to a specific staff (when filtering by attorney in the UI).
+    const source = staffId ? rows.filter(r => {
+      // Treat leadingId or membership in attorneyObservers as belonging to the attorney
+      if (String(r.leadingId) === String(staffId)) return true;
+      if (Array.isArray(r.attorneyObservers) && r.attorneyObservers.map(String).includes(String(staffId))) return true;
+      return false;
+    }) : rows;
+
+    for(const r of source){
       const ts = Date.parse(r.date || r.createdAt || r.timestamp || '');
       if(!Number.isFinite(ts)) continue;
       const d = new Date(ts);
