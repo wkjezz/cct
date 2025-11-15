@@ -62,14 +62,8 @@ function heuristicsFromText(text) {
   const chargesRemoved = /charges removed|state impound|state impound/i.test(t) ? true : undefined;
   const chargesReplaced = /charges replaced/i.test(t) ? true : undefined;
 
-  // Fine and sentence heuristics (simple numbers near $ or 'months')
-  let fine = null;
-  const fineMatch = t.match(/\$\s*(\d{1,6})/);
-  if (fineMatch) fine = Number(fineMatch[1]);
-  let sentenceMonths = null;
-  const sentMatch = t.match(/(\d{1,3})\s*(months|mo\b)/i);
-  if (sentMatch) sentenceMonths = Number(sentMatch[1]);
-
+  // Note: `fine` and `sentenceMonths` heuristics removed — these fields
+  // are no longer collected going forward.
   return {
     dojReportNumber: doj,
     incidentId: incident,
@@ -78,8 +72,6 @@ function heuristicsFromText(text) {
     verdict,
     chargesRemoved,
     chargesReplaced,
-    fine,
-    sentenceMonths,
     notes: t.slice(0,2000)
   };
 }

@@ -75,9 +75,6 @@ export default async function handler(req, res) {
         chargesRemoved: !!b.chargesRemoved,
         chargesReplaced: !!b.chargesRemoved && !!b.chargesReplaced,
 
-        fine: b.fine === null || b.fine === '' || b.fine === undefined ? null : Number(b.fine),
-        sentenceMonths: b.sentenceMonths === null || b.sentenceMonths === '' || b.sentenceMonths === undefined ? null : Number(b.sentenceMonths),
-
         cellCallType: b.cellCallType,
         notes: b.notes || '',
         by: b.by || b.loggedBy || 'unknown',
