@@ -209,3 +209,11 @@ tbody tr:hover{
   .home-options .card,
   .btn { transition: none !important; }
 }
+
+/* Utility to allow inner containers to span full grid rows */
+.full-row { grid-column: 1 / -1; }
+
+/* Center checkbox control inside its label area */
+.checkbox-center { display:flex; justify-content:center; margin-top:6px; }
+
+.label{ margin-bottom: 8px; }

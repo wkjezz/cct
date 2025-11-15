@@ -167,24 +167,26 @@ export default function FormManual({ user, onSaved }){
       <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
         <div style={{flex:1}}>
           <Row>
-            <label className="field">
-              <Label>Date of cell call</Label>
-              <input type="date" value={form.date} onChange={e=>upd('date',e.target.value)} />
-            </label>
-            <label className="field">
-              <Label>Cell Call Type</Label>
-              <select value={form.cellCallType} onChange={(e) => upd('cellCallType', e.target.value)}>
-                <option value="CELL_CALL">Cell Call</option>
-                <option value="WARRANT_ARREST">Warrant Arrest</option>
-                <option value="SENTENCING_HEARING">Sentencing Hearing</option>
-              </select>
-            </label>
-          </Row>
+            <div className="full-row" style={{display:'flex',gap:12,alignItems:'center',width:'100%'}}>
+              <label className="field" style={{flex:1}}>
+                <Label>Date of cell call</Label>
+                <input type="date" style={{width:'100%'}} value={form.date} onChange={e=>upd('date',e.target.value)} />
+              </label>
 
-          <Row>
-            <label className="field"><Label>DOJ Report # (6 chars)</Label>
-              <input value={form.dojReportNumber} onChange={e=>upd('dojReportNumber',six(e.target.value))} maxLength={6}/>
-            </label>
+              <label className="field" style={{flex:1}}>
+                <Label>Cell Call Type</Label>
+                <select style={{width:'100%'}} value={form.cellCallType} onChange={(e) => upd('cellCallType', e.target.value)}>
+                  <option value="CELL_CALL">Cell Call</option>
+                  <option value="WARRANT_ARREST">Warrant Arrest</option>
+                  <option value="SENTENCING_HEARING">Sentencing Hearing</option>
+                </select>
+              </label>
+
+              <label className="field" style={{flex:1}}>
+                <Label>DOJ Report # (6 chars)</Label>
+                <input style={{width:'100%'}} value={form.dojReportNumber} onChange={e=>upd('dojReportNumber',six(e.target.value))} maxLength={6}/>
+              </label>
+            </div>
           </Row>
 
           <Divider />
@@ -218,26 +220,30 @@ export default function FormManual({ user, onSaved }){
           <Divider />
 
           <Row>
-            <div style={{display:'flex',gap:12,alignItems:'center',width:'100%'}}>
+            <div className="full-row" style={{display:'flex',gap:12,alignItems:'flex-start',width:'100%'}}>
               <label className="field" style={{flex:1}}>
                 <Label>Plea</Label>
-                <select value={form.verdict} onChange={e=>upd('verdict',e.target.value)}>
+                <select style={{width:'100%'}} value={form.verdict} onChange={e=>upd('verdict',e.target.value)}>
                   <option value="GUILTY">Guilty</option>
                   <option value="NOT_GUILTY">Not Guilty</option>
                   <option value="NO_CONTEST">No Contest</option>
                   <option value="BENCH_REQUEST">Bench Request</option>
                 </select>
-                {form.verdict==='BENCH_REQUEST' && <div style={{marginTop:8}}><Label>Plea Number</Label><input value={form.benchVerdictNumber} onChange={e=>upd('benchVerdictNumber',e.target.value)}/></div>}
+                {form.verdict==='BENCH_REQUEST' && <div style={{marginTop:8}}><Label>Plea Number</Label><input style={{width:'100%'}} value={form.benchVerdictNumber} onChange={e=>upd('benchVerdictNumber',e.target.value)}/></div>}
               </label>
 
-              <label className="field" style={{flex:1,display:'flex',alignItems:'center',gap:8}}>
-                <input type="checkbox" checked={!!form.chargesRemoved} onChange={e=>upd('chargesRemoved', !!e.target.checked)} style={{transform:'scale(1.25)'}} />
-                <div style={{fontSize:14,fontWeight:600}}>Charge(s) Removed?</div>
+              <label className="field" style={{flex:1}}>
+                <Label>Charge(s) Removed?</Label>
+                <div className="checkbox-center">
+                  <input type="checkbox" checked={!!form.chargesRemoved} onChange={e=>upd('chargesRemoved', !!e.target.checked)} style={{transform:'scale(1.25)'}} />
+                </div>
               </label>
 
-              <label className="field" style={{flex:1,display:'flex',alignItems:'center',gap:8}}>
-                <input type="checkbox" checked={!!form.chargesReplaced} onChange={e=>upd('chargesReplaced', !!e.target.checked)} style={{transform:'scale(1.25)'}} />
-                <div style={{fontSize:14,fontWeight:600}}>Charge(s) Replace?</div>
+              <label className="field" style={{flex:1}}>
+                <Label>Charge(s) Replace?</Label>
+                <div className="checkbox-center">
+                  <input type="checkbox" checked={!!form.chargesReplaced} onChange={e=>upd('chargesReplaced', !!e.target.checked)} style={{transform:'scale(1.25)'}} />
+                </div>
               </label>
             </div>
           </Row>
